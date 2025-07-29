@@ -25,7 +25,6 @@ django-axes==8.0.0
 
 # Manejo de archivos y datos
 openpyxl==3.1.2
-pandas==2.2.2
 pillow==10.3.0
 
 # Generación de PDFs y reportes
@@ -53,7 +52,5 @@ python-decouple==3.8
 python-dateutil==2.9.0.post0
 requests==2.32.4
 
-# Desarrollo y testing
+# Desarrollo (opcional en producción)
 django-extensions==4.1
-pytest==8.4.1
-pytest-django==4.11.1
