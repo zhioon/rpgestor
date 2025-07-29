@@ -13,7 +13,7 @@ from .jefe_ventas_views import (
     enviar_mensaje_grupal
 )
 from .jefe_ventas_views_simple import dashboard_jefeventas_completo_simple
-from productos.views import actualizar_bd_productos_gestor
+from productos.views_temp import actualizar_bd_productos_gestor_temp as actualizar_bd_productos_gestor
 
 
 app_name = 'usuarios' 

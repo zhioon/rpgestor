@@ -1,10 +1,15 @@
-import pandas as pd
 from django.shortcuts        import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms                  import UploadExcelForm
 from .models                 import Grupo, SubGrupo, Producto, StockMovimiento
 from usuarios.models         import Vendedor
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
+
+def pandas_not_available_error(request, redirect_url='productos:inventario_gestor'):
+    """Helper function para mostrar error cuando pandas no está disponible"""
+    messages.error(request, "Función de importación temporalmente deshabilitada. Pandas no está instalado.")
+    return redirect(redirect_url)
 
 @login_required
 def import_products(request):
@@ -22,7 +27,17 @@ def import_products(request):
     if request.method == 'POST':
         form = UploadExcelForm(request.POST, request.FILES)
         if form.is_valid():
-            # Cabeceras en fila 5 → header=4
+            # Función de importación temporalmente deshabilitada - requiere pandas
+            errors.append("Función de importación temporalmente deshabilitada. Contacte al administrador.")
+            return render(request, 'productos/import.html', {
+                'form': form,
+                'count': count,
+                'errors': errors,
+            })
+            
+            # TODO: Implementar importación sin pandas o agregar pandas al requirements.txt
+            """
+            # Código original comentado hasta agregar pandas:
             df = pd.read_excel(
                 request.FILES['excel_file'],
                 header=4,
@@ -287,6 +302,12 @@ def subir_bd_productos_gestor(request):
     from django.contrib import messages
     
     if request.method == 'POST':
+        # Función temporalmente deshabilitada - requiere pandas
+        messages.error(request, "Función de importación temporalmente deshabilitada. Contacte al administrador.")
+        return redirect('productos:inventario_gestor')
+        
+        # TODO: Implementar importación sin pandas o agregar pandas al requirements.txt
+        """
         try:
             # Procesar archivo subido
             archivo = request.FILES.get('archivo_productos')
@@ -413,7 +434,7 @@ def actualizar_bd_productos_gestor(request):
     from django.contrib import messages
     from django.shortcuts import redirect, render
     from decimal import Decimal, InvalidOperation
-    import pandas as pd
+    # import pandas as pd  # Comentado temporalmente
     
     # Mensaje de debug simple que siempre se muestra
     print(f"FUNCIÓN EJECUTADA - Método: {request.method}")
@@ -441,11 +462,21 @@ def actualizar_bd_productos_gestor(request):
         # Quitar la respuesta de prueba y usar la función real
         
         try:
-            # Leer archivo desde la fila 5 (header=4 porque es 0-indexed)
+            # Función temporalmente deshabilitada - requiere pandas
+            error_msg = 'Función de importación temporalmente deshabilitada. Pandas no está instalado.'
+            if is_ajax:
+                return JsonResponse({'error': error_msg}, status=400)
+            else:
+                messages.error(request, error_msg)
+                return redirect('productos:inventario_gestor')
+            
+            # TODO: Implementar importación sin pandas o agregar pandas al requirements.txt
+            """
+            # Código original comentado hasta agregar pandas:
             if archivo.name.endswith('.xlsx'):
                 df = pd.read_excel(archivo, engine='openpyxl', header=4).fillna('')
             else:  # CSV
-                df = pd.read_csv(archivo, header=4).fillna('')
+                df = pd.read_csv(archivo, header=4).fillna('')"""
             
             # Información del archivo para debug
             info_debug = {
