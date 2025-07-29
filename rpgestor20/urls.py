@@ -10,11 +10,18 @@ from django.shortcuts import redirect
 # Importar vistas de error personalizadas
 from core.error_views import custom_404_view, custom_500_view
 
+# Importar vistas de healthcheck
+from core.healthcheck import healthcheck, status
+
 # Vista para redireccionar la raíz al login
 def redirect_to_login(request):
     return redirect('login')
 
 urlpatterns = [
+    # URLs de healthcheck para Railway
+    path('health/', healthcheck, name='healthcheck'),
+    path('status/', status, name='status'),
+    
     # Redirección de la raíz al login
     path('', redirect_to_login, name='home'),
     

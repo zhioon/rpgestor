@@ -15,12 +15,18 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '.railway.app',
     '.up.railway.app',
+    '*',  # Temporal para debugging
 ]
 
 # Si hay un dominio personalizado, agregarlo
 RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL')
 if RAILWAY_STATIC_URL:
     ALLOWED_HOSTS.append(RAILWAY_STATIC_URL)
+
+# Configuración adicional para Railway
+RAILWAY_ENVIRONMENT_NAME = os.environ.get('RAILWAY_ENVIRONMENT_NAME')
+if RAILWAY_ENVIRONMENT_NAME:
+    ALLOWED_HOSTS.append(f'{RAILWAY_ENVIRONMENT_NAME}.railway.app')
 
 # Base de datos
 DATABASE_URL = os.environ.get('DATABASE_URL')
