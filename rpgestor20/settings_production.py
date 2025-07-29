@@ -9,24 +9,19 @@ from .settings import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# Hosts permitidos
+# Hosts permitidos para Render
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.railway.app',
-    '.up.railway.app',
+    'rpgestor.onrender.com',
+    '.onrender.com',
     '*',  # Temporal para debugging
 ]
 
-# Si hay un dominio personalizado, agregarlo
-RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL')
-if RAILWAY_STATIC_URL:
-    ALLOWED_HOSTS.append(RAILWAY_STATIC_URL)
-
-# Configuración adicional para Railway
-RAILWAY_ENVIRONMENT_NAME = os.environ.get('RAILWAY_ENVIRONMENT_NAME')
-if RAILWAY_ENVIRONMENT_NAME:
-    ALLOWED_HOSTS.append(f'{RAILWAY_ENVIRONMENT_NAME}.railway.app')
+# Si hay un dominio personalizado de Render, agregarlo
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Base de datos
 DATABASE_URL = os.environ.get('DATABASE_URL')

@@ -1,2 +1,2 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && python scripts/create_superuser.py && gunicorn rpgestor20.wsgi:application --bind 0.0.0.0:$PORT
-release: python manage.py migrate && python manage.py collectstatic --noinput
+web: python scripts/setup_production.py && gunicorn rpgestor20.wsgi:application --bind 0.0.0.0:$PORT
+release: python scripts/setup_production.py

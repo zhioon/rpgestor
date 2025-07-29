@@ -1,212 +1,255 @@
 #!/usr/bin/env python
 """
-Script para configurar RPGestor para despliegue en producción
+Script de configuración para producción en Render
+Ejecuta migraciones, crea superusuario y configura el sistema
 """
 
 import os
 import sys
-import subprocess
+import django
 from pathlib import Path
 
-# Agregar el directorio raíz al path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+# Agregar el directorio del proyecto al path
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
 
-def print_header(title):
-    """Imprimir encabezado con formato"""
-    print("\n" + "="*60)
-    print(f"🚀 {title}")
-    print("="*60)
+# Configurar Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rpgestor20.settings_production')
 
-def print_success(message):
-    """Imprimir mensaje de éxito"""
-    print(f"✅ {message}")
-
-def print_error(message):
-    """Imprimir mensaje de error"""
-    print(f"❌ {message}")
-
-def print_info(message):
-    """Imprimir mensaje informativo"""
-    print(f"ℹ️  {message}")
-
-def run_command(command, description):
-    """Ejecutar un comando y verificar el resultado"""
+def setup_django():
+    """Configurar Django"""
     try:
-        print_info(f"Ejecutando: {description}")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, cwd=project_root)
-        if result.returncode == 0:
-            print_success(f"{description} - Completado")
-            return True
-        else:
-            print_error(f"{description} - Error: {result.stderr}")
-            return False
+        django.setup()
+        print("✅ Django configurado correctamente")
+        return True
     except Exception as e:
-        print_error(f"{description} - Excepción: {e}")
+        print(f"❌ Error configurando Django: {e}")
         return False
 
-def create_env_production():
-    """Crear archivo .env para producción"""
-    env_content = """# RPGestor - Configuración para Producción
-# IMPORTANTE: Configura estas variables en tu plataforma de hosting
+def run_migrations():
+    """Ejecutar migraciones de Django"""
+    try:
+        print("🔄 Ejecutando migraciones...")
+        
+        # Importar después de configurar Django
+        from django.core.management import execute_from_command_line
+        
+        # Ejecutar migraciones
+        execute_from_command_line(['manage.py', 'migrate', '--noinput'])
+        print("✅ Migraciones ejecutadas correctamente")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error ejecutando migraciones: {e}")
+        return False
 
-# Django
-DEBUG=False
-SECRET_KEY=tu-clave-secreta-super-segura-para-produccion-cambiar-esto
-DJANGO_SETTINGS_MODULE=rpgestor20.settings_production
+def collect_static():
+    """Recopilar archivos estáticos"""
+    try:
+        print("🔄 Recopilando archivos estáticos...")
+        
+        from django.core.management import execute_from_command_line
+        
+        execute_from_command_line(['manage.py', 'collectstatic', '--noinput'])
+        print("✅ Archivos estáticos recopilados")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error recopilando estáticos: {e}")
+        return False
 
-# Base de datos (se configura automáticamente en Railway/Render)
-# DATABASE_URL=postgresql://user:password@host:port/database
+def create_superuser():
+    """Crear superusuario automáticamente"""
+    try:
+        print("🔄 Creando superusuario...")
+        
+        from django.contrib.auth.models import User
+        
+        # Crear superusuario admin
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser(
+                username='admin',
+                email='admin@rpgestor.com',
+                password='admin123'
+            )
+            print("✅ Superusuario 'admin' creado")
+        else:
+            print("ℹ️ Superusuario 'admin' ya existe")
+            
+        # Crear usuario gestor
+        if not User.objects.filter(username='gestor1').exists():
+            User.objects.create_superuser(
+                username='gestor1',
+                email='gestor1@rpgestor.com',
+                password='demo123'
+            )
+            print("✅ Usuario 'gestor1' creado")
+        else:
+            print("ℹ️ Usuario 'gestor1' ya existe")
+            
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error creando superusuario: {e}")
+        return False
 
-# Redis (se configura automáticamente en Railway/Render)
-# REDIS_URL=redis://user:password@host:port
+def create_groups():
+    """Crear grupos de usuarios"""
+    try:
+        print("🔄 Creando grupos de usuarios...")
+        
+        from django.contrib.auth.models import Group
+        
+        groups = ['Gestor', 'JefeVentas', 'Vendedor']
+        
+        for group_name in groups:
+            group, created = Group.objects.get_or_create(name=group_name)
+            if created:
+                print(f"✅ Grupo '{group_name}' creado")
+            else:
+                print(f"ℹ️ Grupo '{group_name}' ya existe")
+                
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error creando grupos: {e}")
+        return False
 
-# Dominio permitido (cambiar por tu dominio)
-ALLOWED_HOSTS=localhost,127.0.0.1,.railway.app,.up.railway.app
+def create_demo_users():
+    """Crear usuarios de demostración"""
+    try:
+        print("🔄 Creando usuarios de demostración...")
+        
+        from django.contrib.auth.models import User, Group
+        
+        # Datos de usuarios demo
+        demo_users = [
+            {
+                'username': 'jefe1',
+                'email': 'jefe1@demo.com',
+                'password': 'demo123',
+                'first_name': 'Carlos',
+                'last_name': 'Jefe',
+                'group': 'JefeVentas'
+            },
+            {
+                'username': 'vendedor1',
+                'email': 'vendedor1@demo.com',
+                'password': 'demo123',
+                'first_name': 'Juan',
+                'last_name': 'Vendedor',
+                'group': 'Vendedor'
+            }
+        ]
+        
+        for user_data in demo_users:
+            if not User.objects.filter(username=user_data['username']).exists():
+                user = User.objects.create_user(
+                    username=user_data['username'],
+                    email=user_data['email'],
+                    password=user_data['password'],
+                    first_name=user_data['first_name'],
+                    last_name=user_data['last_name'],
+                    is_staff=True,
+                    is_active=True
+                )
+                
+                # Asignar grupo
+                try:
+                    group = Group.objects.get(name=user_data['group'])
+                    user.groups.add(group)
+                    print(f"✅ Usuario '{user_data['username']}' creado y asignado al grupo '{user_data['group']}'")
+                except Group.DoesNotExist:
+                    print(f"⚠️ Grupo '{user_data['group']}' no existe para usuario '{user_data['username']}'")
+                    
+            else:
+                print(f"ℹ️ Usuario '{user_data['username']}' ya existe")
+                
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error creando usuarios demo: {e}")
+        return False
 
-# Email (opcional - configurar si necesitas envío de emails)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=tu-email@gmail.com
-EMAIL_HOST_PASSWORD=tu-password-de-aplicacion
-
-# Configuración de archivos estáticos
-STATIC_URL=/static/
-MEDIA_URL=/media/
-"""
-    
-    env_prod_path = project_root / '.env.production'
-    with open(env_prod_path, 'w', encoding='utf-8') as f:
-        f.write(env_content)
-    
-    print_success(f"Archivo .env.production creado en: {env_prod_path}")
+def create_vendedor_records():
+    """Crear registros de vendedor para los usuarios"""
+    try:
+        print("🔄 Creando registros de vendedor...")
+        
+        from django.contrib.auth.models import User
+        from usuarios.models import Vendedor
+        
+        # Usuarios que necesitan registro de vendedor
+        usernames = ['gestor1', 'jefe1', 'vendedor1']
+        
+        for username in usernames:
+            try:
+                user = User.objects.get(username=username)
+                vendedor, created = Vendedor.objects.get_or_create(
+                    user=user,
+                    defaults={'presupuesto': 100000 if username == 'vendedor1' else 0}
+                )
+                
+                if created:
+                    print(f"✅ Registro de vendedor creado para '{username}'")
+                else:
+                    print(f"ℹ️ Registro de vendedor ya existe para '{username}'")
+                    
+            except User.DoesNotExist:
+                print(f"⚠️ Usuario '{username}' no encontrado")
+                
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error creando registros de vendedor: {e}")
+        return False
 
 def main():
     """Función principal"""
-    print("🚀 RPGestor - Configuración para Producción")
-    print("Preparando el proyecto para despliegue...")
+    print("🚀 Iniciando configuración de producción...")
+    print("=" * 50)
     
-    print_header("VERIFICANDO ESTRUCTURA DEL PROYECTO")
+    # Paso 1: Configurar Django
+    if not setup_django():
+        sys.exit(1)
     
-    # Verificar archivos necesarios
-    required_files = [
-        'manage.py',
-        'requirements.txt',
-        'railway.json',
-        'Procfile',
-        'rpgestor20/settings_production.py'
-    ]
+    # Paso 2: Ejecutar migraciones
+    if not run_migrations():
+        sys.exit(1)
     
-    missing_files = []
-    for file_path in required_files:
-        if os.path.exists(project_root / file_path):
-            print_success(f"Archivo encontrado: {file_path}")
-        else:
-            print_error(f"Archivo faltante: {file_path}")
-            missing_files.append(file_path)
+    # Paso 3: Recopilar archivos estáticos
+    if not collect_static():
+        sys.exit(1)
     
-    if missing_files:
-        print_error("Faltan archivos necesarios para el despliegue")
-        return False
+    # Paso 4: Crear grupos
+    if not create_groups():
+        print("⚠️ Error creando grupos, continuando...")
     
-    print_header("CONFIGURANDO ARCHIVOS DE PRODUCCIÓN")
+    # Paso 5: Crear superusuario
+    if not create_superuser():
+        print("⚠️ Error creando superusuario, continuando...")
     
-    # Crear archivo .env para producción
-    create_env_production()
+    # Paso 6: Crear usuarios demo
+    if not create_demo_users():
+        print("⚠️ Error creando usuarios demo, continuando...")
     
-    print_header("VERIFICANDO DEPENDENCIAS")
+    # Paso 7: Crear registros de vendedor
+    if not create_vendedor_records():
+        print("⚠️ Error creando registros de vendedor, continuando...")
     
-    # Verificar que las dependencias estén instaladas
-    commands = [
-        ("python -c \"import django; print('Django:', django.get_version())\"", "Verificar Django"),
-        ("python -c \"import gunicorn; print('Gunicorn instalado')\"", "Verificar Gunicorn"),
-        ("python -c \"import whitenoise; print('WhiteNoise instalado')\"", "Verificar WhiteNoise"),
-        ("python -c \"import dj_database_url; print('dj-database-url instalado')\"", "Verificar dj-database-url"),
-    ]
-    
-    for command, description in commands:
-        run_command(command, description)
-    
-    print_header("VERIFICANDO CONFIGURACIÓN DE DJANGO")
-    
-    # Verificar configuración de Django
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'rpgestor20.settings_production'
-    django_commands = [
-        ("python manage.py check --deploy", "Verificar configuración para producción"),
-        ("python manage.py collectstatic --noinput --dry-run", "Verificar archivos estáticos"),
-    ]
-    
-    for command, description in django_commands:
-        run_command(command, description)
-    
-    print_header("INSTRUCCIONES DE DESPLIEGUE")
-    
-    print("📋 PASOS PARA DESPLEGAR EN RAILWAY:")
-    print("   1. Crear cuenta en https://railway.app")
-    print("   2. Conectar tu repositorio de GitHub")
-    print("   3. Crear nuevo proyecto desde GitHub")
-    print("   4. Railway detectará automáticamente Django")
-    print("   5. Agregar servicios: PostgreSQL + Redis")
-    print("   6. Configurar variables de entorno:")
-    print("      - DEBUG=False")
-    print("      - SECRET_KEY=tu-clave-secreta-segura")
-    print("      - DJANGO_SETTINGS_MODULE=rpgestor20.settings_production")
-    print("   7. Deploy automático se ejecutará")
-    print("   8. Tu app estará disponible en: https://tu-app.up.railway.app")
-    
-    print("\n📋 PASOS PARA DESPLEGAR EN RENDER:")
-    print("   1. Crear cuenta en https://render.com")
-    print("   2. Crear nuevo Web Service desde GitHub")
-    print("   3. Configurar:")
-    print("      - Build Command: pip install -r requirements.txt")
-    print("      - Start Command: gunicorn rpgestor20.wsgi:application")
-    print("   4. Agregar PostgreSQL database")
-    print("   5. Configurar variables de entorno (igual que Railway)")
-    print("   6. Deploy automático se ejecutará")
-    
-    print("\n📋 PASOS PARA DESPLEGAR EN HEROKU:")
-    print("   1. Instalar Heroku CLI")
-    print("   2. heroku create tu-app-rpgestor")
-    print("   3. heroku addons:create heroku-postgresql:hobby-dev")
-    print("   4. heroku addons:create heroku-redis:hobby-dev")
-    print("   5. heroku config:set DEBUG=False")
-    print("   6. heroku config:set SECRET_KEY=tu-clave-secreta")
-    print("   7. git push heroku main")
-    print("   8. heroku run python manage.py migrate")
-    print("   9. heroku run python manage.py createsuperuser")
-    
-    print_header("VARIABLES DE ENTORNO IMPORTANTES")
-    
-    print("🔑 CONFIGURAR EN TU PLATAFORMA DE HOSTING:")
-    print("   DEBUG=False")
-    print("   SECRET_KEY=clave-super-secreta-cambiar-esto")
-    print("   DJANGO_SETTINGS_MODULE=rpgestor20.settings_production")
-    print("   DATABASE_URL=postgresql://... (automático)")
-    print("   REDIS_URL=redis://... (automático)")
-    
-    print_header("DESPUÉS DEL DESPLIEGUE")
-    
-    print("📋 COMANDOS A EJECUTAR DESPUÉS DEL PRIMER DEPLOY:")
-    print("   1. Ejecutar migraciones (automático en Railway)")
-    print("   2. Crear superusuario:")
-    print("      - Railway: railway run python manage.py createsuperuser")
-    print("      - Render: usar shell desde dashboard")
-    print("      - Heroku: heroku run python manage.py createsuperuser")
-    print("   3. Cargar datos iniciales si es necesario")
-    
-    print_header("URLS DE ACCESO")
-    
-    print("🌐 TU APLICACIÓN ESTARÁ DISPONIBLE EN:")
-    print("   - Railway: https://tu-proyecto.up.railway.app")
-    print("   - Render: https://tu-app.onrender.com")
-    print("   - Heroku: https://tu-app.herokuapp.com")
-    
-    print("\n🎉 ¡Tu proyecto RPGestor está listo para producción!")
-    print("📚 Consulta la documentación en docs/DESPLIEGUE.md para más detalles")
-    
-    return True
+    print("=" * 50)
+    print("🎉 Configuración de producción completada!")
+    print("")
+    print("📋 CREDENCIALES DISPONIBLES:")
+    print("👔 Admin: admin / admin123")
+    print("👔 Gestor: gestor1 / demo123")
+    print("👨‍💼 Jefe: jefe1 / demo123")
+    print("💼 Vendedor: vendedor1 / demo123")
+    print("")
+    print("🌐 URLs:")
+    print("📱 App: https://rpgestor.onrender.com")
+    print("🔐 Admin: https://rpgestor.onrender.com/admin")
+    print("🛠️ Setup: https://rpgestor.onrender.com/setup-admin")
 
-if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+if __name__ == '__main__':
+    main()
