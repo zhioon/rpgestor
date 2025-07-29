@@ -13,17 +13,40 @@ def create_superuser():
     
     from django.contrib.auth.models import User
     
-    # Verificar si ya existe un superusuario
-    if not User.objects.filter(is_superuser=True).exists():
-        # Crear superusuario automáticamente
+    # Crear o actualizar superusuario
+    try:
+        # Intentar obtener el usuario admin
+        admin_user = User.objects.get(username='admin')
+        # Si existe, actualizar la contraseña
+        admin_user.set_password('rpgestor2025')
+        admin_user.is_superuser = True
+        admin_user.is_staff = True
+        admin_user.save()
+        print("✅ Superusuario actualizado: admin / rpgestor2025")
+    except User.DoesNotExist:
+        # Si no existe, crear nuevo superusuario
         User.objects.create_superuser(
             username='admin',
             email='admin@rpgestor.com',
             password='rpgestor2025'
         )
         print("✅ Superusuario creado: admin / rpgestor2025")
-    else:
-        print("✅ Superusuario ya existe")
+    
+    # Crear superusuario alternativo
+    try:
+        alt_user = User.objects.get(username='gestor')
+        alt_user.set_password('demo123')
+        alt_user.is_superuser = True
+        alt_user.is_staff = True
+        alt_user.save()
+        print("✅ Superusuario alternativo actualizado: gestor / demo123")
+    except User.DoesNotExist:
+        User.objects.create_superuser(
+            username='gestor',
+            email='gestor@rpgestor.com',
+            password='demo123'
+        )
+        print("✅ Superusuario alternativo creado: gestor / demo123")
 
 if __name__ == '__main__':
     create_superuser()
