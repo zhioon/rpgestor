@@ -1,4 +1,3 @@
-import pandas as pd
 import datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -10,11 +9,21 @@ from .models import Cliente
 from usuarios.models import Vendedor
 
 def import_clients_full(request):
+    """
+    Función de importación de clientes desde Excel
+    Temporalmente deshabilitada hasta agregar pandas
+    """
     count = 0
     errors = []
     if request.method == 'POST':
         form = UploadExcelForm(request.POST, request.FILES)
         if form.is_valid():
+            # Temporalmente deshabilitado - requiere pandas
+            errors.append("Función de importación temporalmente deshabilitada. Contacte al administrador.")
+            
+            # TODO: Implementar importación sin pandas o agregar pandas al requirements.txt
+            # Código original comentado hasta agregar pandas:
+            """
             df = pd.read_excel(
                 request.FILES['excel_file'],
                 header=0,
@@ -23,15 +32,12 @@ def import_clients_full(request):
 
             for idx, row in df.iterrows():
                 try:
-                    # Convertir cada valor al tipo JSON-serializable
                     raw = row.to_dict()
                     data = {}
                     for key, val in raw.items():
                         if isinstance(val, pd.Timestamp):
-                            # convierte Timestamp a ISO string
                             data[key] = val.isoformat()
                         elif isinstance(val, (datetime.date, datetime.datetime)):
-                            # otras fechas
                             data[key] = val.isoformat()
                         else:
                             data[key] = val
@@ -45,6 +51,7 @@ def import_clients_full(request):
 
                 except Exception as e:
                     errors.append(f"Fila {idx+2}: {e}")
+            """
     else:
         form = UploadExcelForm()
 
