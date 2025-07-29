@@ -5,10 +5,9 @@
 Django==4.2.23
 djangorestframework==3.16.0
 
-# Channels para WebSockets
+# Channels para WebSockets (simplificado)
 channels==4.1.0
 channels-redis==4.2.0
-daphne==4.2.1
 
 # Base de datos
 psycopg2-binary==2.9.9
@@ -25,23 +24,18 @@ django-axes==8.0.0
 
 # Manejo de archivos y datos
 openpyxl==3.1.2
-pillow==10.3.0
 
-# Generación de PDFs y reportes
-reportlab==4.2.0
-xhtml2pdf==0.2.16
+# Generación de PDFs y reportes (versiones más compatibles)
+reportlab==4.0.4
 
-# Códigos QR y códigos de barras
+# Códigos QR (versión más simple)
 qrcode==7.4.2
-python-barcode==0.15.1
 
 # Cache y Redis
 redis==5.0.6
-django-cacheops==7.2
 
 # Servidor web
 gunicorn==21.2.0
-uvicorn==0.35.0
 whitenoise==6.5.0
 
 # Base de datos para producción
