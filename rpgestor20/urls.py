@@ -16,6 +16,7 @@ from core.healthcheck import healthcheck, status
 # Importar vistas de setup
 from core.admin_setup import setup_admin
 from core.views import emergency_setup
+from core.migrate_setup import migrate_and_setup
 
 # Vista para redireccionar la raíz al login
 def redirect_to_login(request):
@@ -29,6 +30,7 @@ urlpatterns = [
     # URLs para configuración de emergencia
     path('setup-admin/', setup_admin, name='setup_admin'),
     path('emergency-setup/', emergency_setup, name='emergency_setup'),
+    path('migrate-setup/', migrate_and_setup, name='migrate_setup'),
     
     # Redirección de la raíz al login
     path('', redirect_to_login, name='home'),
