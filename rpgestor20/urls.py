@@ -13,6 +13,10 @@ from core.error_views import custom_404_view, custom_500_view
 # Importar vistas de healthcheck
 from core.healthcheck import healthcheck, status
 
+# Importar vistas de setup
+from core.admin_setup import setup_admin
+from core.views import emergency_setup
+
 # Vista para redireccionar la raíz al login
 def redirect_to_login(request):
     return redirect('login')
@@ -21,6 +25,10 @@ urlpatterns = [
     # URLs de healthcheck para Railway
     path('health/', healthcheck, name='healthcheck'),
     path('status/', status, name='status'),
+    
+    # URLs para configuración de emergencia
+    path('setup-admin/', setup_admin, name='setup_admin'),
+    path('emergency-setup/', emergency_setup, name='emergency_setup'),
     
     # Redirección de la raíz al login
     path('', redirect_to_login, name='home'),
