@@ -1,0 +1,229 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPGestor - Iniciar Sesión</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para gráficos de fondo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .chart-container {
+            position: absolute;
+            opacity: 0.08;
+            pointer-events: none;
+        }
+        
+        .divider-line {
+            width: 1px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full gradient-bg overflow-hidden">
+    <!-- Gráficos de fondo animados (mantener el fondo hermoso) -->
+    <div class="chart-container top-10 left-10 w-32 h-32 animate-float">
+        <canvas id="bgChart1"></canvas>
+    </div>
+    <div class="chart-container top-20 right-20 w-24 h-24 animate-pulse-slow">
+        <canvas id="bgChart2"></canvas>
+    </div>
+    <div class="chart-container bottom-20 left-20 w-28 h-28 animate-float" style="animation-delay: 2s;">
+        <canvas id="bgChart3"></canvas>
+    </div>
+    <div class="chart-container bottom-10 right-10 w-20 h-20 animate-pulse-slow" style="animation-delay: 1s;">
+        <canvas id="bgChart4"></canvas>
+    </div>
+    
+    <!-- Elementos decorativos flotantes -->
+    <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full opacity-20 animate-ping"></div>
+    <div class="absolute top-3/4 right-1/3 w-3 h-3 bg-blue-200 rounded-full opacity-30 animate-pulse"></div>
+    <div class="absolute top-1/2 left-1/6 w-1 h-1 bg-white rounded-full opacity-40 animate-bounce"></div>
+    
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col lg:flex-row items-center lg:space-x-16 space-y-8 lg:space-y-0 w-full max-w-4xl">
+            <!-- Logo lado izquierdo -->
+            <div class="text-center flex flex-col items-center w-full lg:w-auto">
+                <img src="{% static 'img/logo-rpgestor.png' %}" alt="RPGestor Logo" class="h-20 w-auto mb-4 opacity-90">
+                <h1 class="text-6xl font-light text-white tracking-wide">RPGestor</h1>
+            </div>
+            
+            <!-- Línea divisoria vertical para pantallas grandes -->
+            <div class="divider-line hidden lg:block"></div>
+            
+            <!-- Línea divisoria horizontal para pantallas pequeñas -->
+            <div class="w-full h-px bg-white bg-opacity-30 lg:hidden"></div>
+
+            <!-- Formulario lado derecho -->
+            <div class="w-full max-w-md lg:w-80">
+                <div class="mb-6">
+                    <h2 class="text-white text-lg font-light mb-8 text-center lg:text-left">Ingresar a su Cuenta</h2>
+                </div>
+
+                {% if form.errors %}
+                    <div class="bg-red-500 bg-opacity-20 border border-red-400 text-white px-4 py-3 rounded mb-6" role="alert">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span class="text-sm">Credenciales incorrectas</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <!-- Campo Usuario -->
+                    <div>
+                        <input 
+                            type="text" 
+                            name="username" 
+                            id="id_username"
+                            required 
+                            class="w-full px-4 py-3 bg-transparent border border-white border-opacity-40 rounded text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-white focus:border-opacity-80 transition-all duration-200"
+                            placeholder="Correo Electrónico"
+                            value="{{ form.username.value|default:'' }}"
+                        >
+                    </div>
+
+                    <!-- Campo Contraseña -->
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            name="password" 
+                            id="id_password"
+                            required 
+                            class="w-full px-4 py-3 bg-transparent border border-white border-opacity-40 rounded text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:border-white focus:border-opacity-80 transition-all duration-200"
+                            placeholder="••••••••"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <button type="button" id="togglePassword" class="text-white text-opacity-70 hover:text-opacity-100 transition-colors">
+                                <i class="fas fa-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botón de login -->
+                    <div class="pt-2">
+                        <button 
+                            type="submit" 
+                            class="w-full bg-orange-400 hover:bg-orange-500 text-white py-3 px-4 rounded font-medium transition-all duration-200 transform hover:scale-[1.02]"
+                        >
+                            Entrar
+                        </button>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordField = document.getElementById('id_password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Crear gráficos de fondo animados
+        function createBackgroundChart(canvasId, type, colors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: ['A', 'B', 'C', 'D'],
+                    datasets: [{
+                        data: [Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100],
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: type === 'line' ? {
+                        x: { display: false },
+                        y: { display: false }
+                    } : {}
+                }
+            });
+        }
+
+        // Inicializar gráficos de fondo
+        setTimeout(() => {
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart3', 'line', ['rgba(255,255,255,0.25)']);
+            createBackgroundChart('bgChart4', 'pie', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+        }, 100);
+
+        // Animar los gráficos de fondo
+        setInterval(() => {
+            // Recrear gráficos con nuevos datos para animación
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+        }, 5000);
+
+        // Efectos de focus en los inputs
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('scale-105');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('scale-105');
+            });
+        });
+
+        // Animación de entrada
+        window.addEventListener('load', function() {
+            document.querySelector('.max-w-md').classList.add('animate-fade-in');
+        });
+    </script>
+</body>
+</html>

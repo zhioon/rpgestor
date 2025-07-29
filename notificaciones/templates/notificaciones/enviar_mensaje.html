@@ -1,0 +1,160 @@
+{% extends 'base_unified.html' %}
+
+{% block title %}Enviar Mensaje - RPGestor{% endblock %}
+{% block page_title %}Nuevo Mensaje{% endblock %}
+{% block page_subtitle %}Envía un mensaje interno a otro usuario{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% if user.groups.first.name == 'Gestor' %}
+    {% include 'menus/gestor_menu.html' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+    {% include 'menus/jefe_ventas_menu.html' %}
+{% else %}
+    {% include 'menus/vendedor_menu.html' %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header de la página -->
+        <div class="bg-gradient-to-r from-green-500 to-blue-600 px-6 py-4">
+            <div class="flex items-center">
+                <i class="fas fa-edit text-white text-2xl mr-3"></i>
+                <h2 class="text-xl font-semibold text-white">Redactar Mensaje</h2>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Destinatario -->
+                <div>
+                    <label for="{{ form.recipient.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-2 text-gray-500"></i>
+                        {{ form.recipient.label }}
+                    </label>
+                    <div class="relative">
+                        {{ form.recipient }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                    {% if form.recipient.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.recipient.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Asunto -->
+                <div>
+                    <label for="{{ form.subject.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-2 text-gray-500"></i>
+                        {{ form.subject.label }}
+                    </label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.subject.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Mensaje -->
+                <div>
+                    <label for="{{ form.body.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-comment mr-2 text-gray-500"></i>
+                        {{ form.body.label }}
+                    </label>
+                    {{ form.body }}
+                    {% if form.body.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in form.body.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Botones -->
+                <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <a href="{% url 'notificaciones:inbox' %}" 
+                       class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Volver
+                    </a>
+                    
+                    <button type="submit" 
+                            class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-8 py-3 rounded-lg transition-all duration-200 flex items-center transform hover:scale-105">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Enviar Mensaje
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para los campos del formulario */
+#id_recipient {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    background-image: none;
+}
+
+#id_recipient:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#id_subject {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#id_subject:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#id_body {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+    min-height: 120px;
+    resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#id_body:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+</style>
+{% endblock %}

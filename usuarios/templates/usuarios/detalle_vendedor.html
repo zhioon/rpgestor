@@ -1,0 +1,491 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Detalle de {{ vendedor.user.first_name }} {{ vendedor.user.last_name }} - RPGestor{% endblock %}
+
+{% block page_title %}{{ vendedor.user.first_name }} {{ vendedor.user.last_name }}{% endblock %}
+{% block page_subtitle %}Análisis detallado del vendedor{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Breadcrumb -->
+    <div class="mb-4">
+        <a href="{% url 'usuarios:dashboard_jefeventas_completo' %}" class="text-blue-600 hover:text-blue-800 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Volver al Dashboard
+        </a>
+        <span class="text-gray-400 mx-2">•</span>
+        <a href="{% url 'usuarios:mi_equipo' %}" class="text-blue-600 hover:text-blue-800 text-sm">Mi Equipo</a>
+        <span class="text-gray-400 mx-2">•</span>
+        <span class="text-gray-600 text-sm">{{ vendedor.user.get_full_name|default:vendedor.user.username }}</span>
+    </div>
+
+    <!-- Header del Vendedor -->
+    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+        <div class="flex items-center space-x-6">
+            <!-- Imagen del Vendedor -->
+            <div class="flex-shrink-0">
+                {% if vendedor.user.profile.get_profile_picture_url %}
+                    <img src="{{ vendedor.user.profile.get_profile_picture_url }}" 
+                         alt="Foto de {{ vendedor.user.get_full_name }}" 
+                         class="w-24 h-24 rounded-full object-cover border-4 border-blue-200 shadow-lg">
+                {% else %}
+                    <div class="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg border-4 border-blue-200">
+                        <span class="text-white text-3xl font-bold">
+                            {{ vendedor.user.first_name.0|default:vendedor.user.username.0|upper }}{{ vendedor.user.last_name.0|upper }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Información del Vendedor -->
+            <div class="flex-1">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                    {{ vendedor.user.get_full_name|default:vendedor.user.username }}
+                </h1>
+                <div class="flex items-center space-x-4 text-lg text-gray-600 mb-3">
+                    <span class="flex items-center">
+                        <i class="fas fa-user-tie text-blue-500 mr-2"></i>
+                        Vendedor
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-at text-gray-500 mr-2"></i>
+                        {{ vendedor.user.username }}
+                    </span>
+                    {% if vendedor.user.email %}
+                    <span class="flex items-center">
+                        <i class="fas fa-envelope text-gray-500 mr-2"></i>
+                        {{ vendedor.user.email }}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Estado de Actividad -->
+                <div class="flex items-center space-x-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        Activo
+                    </span>
+                    
+                    <!-- Resumen Rápido -->
+                    <div class="flex items-center space-x-6 text-sm text-gray-600">
+                        <span class="flex items-center">
+                            <i class="fas fa-chart-line text-green-500 mr-1"></i>
+                            <strong class="text-green-600">${{ stats.mes.ventas|floatformat:0|intcomma }}</strong>
+                            <span class="ml-1">este mes</span>
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-shopping-cart text-blue-500 mr-1"></i>
+                            <strong class="text-blue-600">{{ stats.mes.pedidos }}</strong>
+                            <span class="ml-1">pedidos</span>
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-percentage text-purple-500 mr-1"></i>
+                            <strong class="text-purple-600">{% widthratio stats.mes.ventas presupuesto_efectivo_mes 100 %}%</strong>
+                            <span class="ml-1">de meta</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="flex-shrink-0">
+                <div class="flex flex-col space-y-2">
+                    <button onclick="enviarMensaje()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-envelope mr-2"></i>Enviar Mensaje
+                    </button>
+                    <a href="{% url 'usuarios:reportes_equipo' %}?vendedor_id={{ vendedor.id }}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm text-center transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>Ver Reportes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas por período -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Mes Actual -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Este Mes</h3>
+                <i class="fas fa-calendar-alt text-blue-500"></i>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-sm text-gray-600">Ventas</p>
+                    <p class="text-2xl font-bold text-green-600">${{ stats.mes.ventas|floatformat:0|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Pedidos</p>
+                    <p class="text-xl font-semibold text-gray-900">{{ stats.mes.pedidos }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Meta</p>
+                    <p class="text-lg text-gray-700">${{ presupuesto_efectivo_mes|floatformat:0|intcomma }}</p>
+                    {% with porcentaje=stats.mes.ventas|floatformat:2 %}
+                    {% if presupuesto_efectivo_mes > 0 %}
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio stats.mes.ventas presupuesto_efectivo_mes 100 %}%"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{% widthratio stats.mes.ventas presupuesto_efectivo_mes 100 %}% completado</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Trimestre -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Este Trimestre</h3>
+                <i class="fas fa-chart-line text-green-500"></i>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-sm text-gray-600">Ventas</p>
+                    <p class="text-2xl font-bold text-green-600">${{ stats.trimestre.ventas|floatformat:0|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Pedidos</p>
+                    <p class="text-xl font-semibold text-gray-900">{{ stats.trimestre.pedidos }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Promedio Mensual</p>
+                    {% with promedio=stats.trimestre.ventas|floatformat:2 %}
+                    <p class="text-lg text-gray-700">${{ promedio|floatformat:0|intcomma }}</p>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Año -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Este Año</h3>
+                <i class="fas fa-trophy text-yellow-500"></i>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-sm text-gray-600">Ventas</p>
+                    <p class="text-2xl font-bold text-green-600">${{ stats.año.ventas|floatformat:0|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Pedidos</p>
+                    <p class="text-xl font-semibold text-gray-900">{{ stats.año.pedidos }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Promedio Mensual</p>
+                    {% with promedio_anual=stats.año.ventas|floatformat:2 %}
+                    <p class="text-lg text-gray-700">${{ promedio_anual|floatformat:0|intcomma }}</p>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metas Activas -->
+    {% if metas %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Metas Activas</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for meta in metas %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-semibold text-gray-900">Meta {{ meta.get_tipo_display }}</h4>
+                        <p class="text-sm text-gray-600">{{ meta.fecha_inicio }} - {{ meta.fecha_fin }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if meta.porcentaje_cumplimiento >= 100 %}bg-green-100 text-green-800
+                        {% elif meta.porcentaje_cumplimiento >= 80 %}bg-blue-100 text-blue-800
+                        {% elif meta.porcentaje_cumplimiento >= 60 %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ meta.porcentaje_cumplimiento|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Progreso</span>
+                        <span>${{ meta.progreso_actual|floatformat:0|intcomma }} / ${{ meta.monto_meta|floatformat:0|intcomma }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="h-2 rounded-full 
+                            {% if meta.porcentaje_cumplimiento >= 100 %}bg-green-500
+                            {% elif meta.porcentaje_cumplimiento >= 80 %}bg-blue-500
+                            {% elif meta.porcentaje_cumplimiento >= 60 %}bg-yellow-500
+                            {% else %}bg-red-500{% endif %}"
+                            style="width: {{ meta.porcentaje_cumplimiento|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+                {% if meta.descripcion %}
+                <p class="text-sm text-gray-600">{{ meta.descripcion }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Grid de contenido -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Productos más vendidos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6">Productos Más Vendidos (Este Mes)</h3>
+            {% if productos_vendedor %}
+            <div class="space-y-4">
+                {% for producto in productos_vendedor %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-box text-gray-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ producto.producto__nombre|truncatechars:20 }}</p>
+                            <p class="text-sm text-gray-600">{{ producto.producto__codigo }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-blue-600">{{ producto.total_vendido }} unidades</p>
+                        <p class="text-sm text-gray-500">${{ producto.total_ingresos|floatformat:0|intcomma }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No hay productos vendidos este mes</p>
+            {% endif %}
+        </div>
+
+        <!-- Clientes principales -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6">Clientes Principales (Este Mes)</h3>
+            {% if clientes_vendedor %}
+            <div class="space-y-4">
+                {% for cliente in clientes_vendedor %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-900">
+                            {{ cliente.cliente__data.Empresa|default:cliente.cliente__data.Razon_Comercial|default:"Sin nombre"|truncatechars:20 }}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            NIT: {{ cliente.cliente__data.Nit|default:"N/A" }}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ cliente.num_pedidos }} pedido{{ cliente.num_pedidos|pluralize:"s" }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-green-600">${{ cliente.total_compras|floatformat:0|intcomma }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No hay clientes atendidos este mes</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seguimientos -->
+    <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Historial de Seguimientos</h3>
+        {% if seguimientos %}
+        <div class="space-y-4">
+            {% for seguimiento in seguimientos %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-semibold text-gray-900">{{ seguimiento.get_tipo_display }}</h4>
+                        <p class="text-sm text-gray-600">
+                            {{ seguimiento.fecha_seguimiento|date:"d/m/Y H:i" }} • 
+                            Por {{ seguimiento.realizado_por.first_name }} {{ seguimiento.realizado_por.last_name }}
+                        </p>
+                    </div>
+                    {% if seguimiento.calificacion %}
+                    <div class="flex items-center">
+                        {% for i in "12345" %}
+                        <i class="fas fa-star {% if forloop.counter <= seguimiento.calificacion %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="space-y-3">
+                    <div>
+                        <h5 class="font-medium text-gray-700">Observaciones:</h5>
+                        <p class="text-gray-600">{{ seguimiento.observaciones }}</p>
+                    </div>
+                    
+                    {% if seguimiento.puntos_fuertes %}
+                    <div>
+                        <h5 class="font-medium text-green-700">Puntos Fuertes:</h5>
+                        <p class="text-gray-600">{{ seguimiento.puntos_fuertes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if seguimiento.areas_mejora %}
+                    <div>
+                        <h5 class="font-medium text-yellow-700">Áreas de Mejora:</h5>
+                        <p class="text-gray-600">{{ seguimiento.areas_mejora }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if seguimiento.acciones_acordadas %}
+                    <div>
+                        <h5 class="font-medium text-blue-700">Acciones Acordadas:</h5>
+                        <p class="text-gray-600">{{ seguimiento.acciones_acordadas }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No hay seguimientos registrados</p>
+        {% endif %}
+    </div>
+
+    <!-- Mensajes enviados -->
+    <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Mensajes Enviados</h3>
+        {% if mensajes %}
+        <div class="space-y-4">
+            {% for mensaje in mensajes %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-semibold text-gray-900">{{ mensaje.asunto }}</h4>
+                        <p class="text-sm text-gray-600">{{ mensaje.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if mensaje.tipo == 'M' %}bg-blue-100 text-blue-800
+                            {% elif mensaje.tipo == 'A' %}bg-red-100 text-red-800
+                            {% elif mensaje.tipo == 'F' %}bg-green-100 text-green-800
+                            {% elif mensaje.tipo == 'R' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                            {{ mensaje.get_tipo_display }}
+                        </span>
+                        {% if mensaje.leido %}
+                        <span class="text-green-600 text-sm">
+                            <i class="fas fa-check-double"></i> Leído
+                        </span>
+                        {% else %}
+                        <span class="text-gray-500 text-sm">
+                            <i class="fas fa-clock"></i> Pendiente
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <p class="text-gray-600">{{ mensaje.mensaje|truncatechars:150 }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No hay mensajes enviados</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modales (similares a los del dashboard principal) -->
+<!-- Modal para enviar mensaje -->
+<div id="modalMensaje" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Enviar Mensaje</h3>
+                <form id="formMensaje">
+                    <input type="hidden" id="vendedorId" value="{{ vendedor.id }}">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                        <select id="tipoMensaje" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="M">Motivacional</option>
+                            <option value="A">Alerta</option>
+                            <option value="F">Felicitación</option>
+                            <option value="R">Recordatorio</option>
+                            <option value="RE">Reunión</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
+                        <select id="prioridadMensaje" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="B">Baja</option>
+                            <option value="M" selected>Media</option>
+                            <option value="A">Alta</option>
+                            <option value="U">Urgente</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Asunto</label>
+                        <input type="text" id="asuntoMensaje" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
+                        <textarea id="textoMensaje" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2" required></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="cerrarModalMensaje()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Enviar Mensaje
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function enviarMensaje() {
+    document.getElementById('modalMensaje').classList.remove('hidden');
+}
+
+function cerrarModalMensaje() {
+    document.getElementById('modalMensaje').classList.add('hidden');
+    document.getElementById('formMensaje').reset();
+}
+
+function crearSeguimiento() {
+    alert('Función de seguimiento en desarrollo');
+}
+
+function asignarMeta() {
+    alert('Función de asignación de meta en desarrollo');
+}
+
+// Envío de formulario de mensaje
+document.getElementById('formMensaje').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        vendedor_id: document.getElementById('vendedorId').value,
+        tipo: document.getElementById('tipoMensaje').value,
+        prioridad: document.getElementById('prioridadMensaje').value,
+        asunto: document.getElementById('asuntoMensaje').value,
+        mensaje: document.getElementById('textoMensaje').value
+    };
+    
+    fetch('{% url "usuarios:enviar_mensaje_vendedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mensaje enviado correctamente');
+            cerrarModalMensaje();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+});
+</script>
+{% endblock %}

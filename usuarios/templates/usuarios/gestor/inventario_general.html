@@ -1,0 +1,252 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+{% load mathfilters %}
+
+{% block title %}Inventario General - RPGestor{% endblock %}
+{% block page_title %}Inventario General{% endblock %}
+{% block page_subtitle %}Gestión completa del inventario por grupos y subgrupos{% endblock %}
+{% block user_role %}Gestor{% endblock %}
+{% block dashboard_url %}{% url 'usuarios:dashboard_gestor' %}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/gestor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Estadísticas principales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-box text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Productos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_productos|default:0 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 mr-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Sin Stock</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ productos_sin_stock|default:0 }}</p>
+                    <p class="text-sm text-red-600">Requieren atención</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 mr-4">
+                    <i class="fas fa-exclamation-circle text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Stock Bajo</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ productos_stock_bajo|default:0 }}</p>
+                    <p class="text-sm text-yellow-600">≤ 10 unidades</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-tools text-gray-600 mr-2"></i>
+            Acciones Rápidas
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'productos:inventario_gestor' %}" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="p-2 bg-blue-100 rounded-lg mr-3">
+                    <i class="fas fa-search text-blue-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Ver Inventario Detallado</h4>
+                    <p class="text-sm text-gray-500">Buscar y filtrar productos</p>
+                </div>
+            </a>
+            
+            <a href="{% url 'usuarios:subir_bd_productos' %}" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="p-2 bg-green-100 rounded-lg mr-3">
+                    <i class="fas fa-upload text-green-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Subir Productos</h4>
+                    <p class="text-sm text-gray-500">Cargar archivo masivo</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Inventario por Grupos -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-layer-group text-gray-600 mr-2"></i>
+                Inventario por Grupos
+            </h3>
+            <div class="text-sm text-gray-500">
+                {{ grupos.count }} grupo{{ grupos.count|pluralize }}
+            </div>
+        </div>
+        
+        <!-- Grid de grupos - 2 por fila para ahorrar espacio -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for grupo in grupos %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <!-- Header del grupo más compacto -->
+                <div class="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                    <div class="flex items-center">
+                        <div class="p-1.5 bg-blue-100 rounded mr-2">
+                            <i class="fas fa-folder text-blue-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">{{ grupo.nombre }}</h4>
+                            <p class="text-xs text-gray-500">
+                                {{ grupo.subgrupo_set.count }} subgrupo{{ grupo.subgrupo_set.count|pluralize }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-500">Productos</div>
+                        <div class="text-lg font-bold text-gray-900">
+                            {% with total_productos_grupo=0 %}
+                                {% for subgrupo in grupo.subgrupo_set.all %}
+                                    {% with total_productos_grupo=total_productos_grupo|add:subgrupo.producto_set.count %}{% endwith %}
+                                {% endfor %}
+                                {{ total_productos_grupo }}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Subgrupos del grupo más compactos -->
+                <div class="space-y-3">
+                    {% for subgrupo in grupo.subgrupo_set.all %}
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <!-- Header del subgrupo compacto -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center">
+                                <div class="p-1 bg-green-100 rounded mr-2">
+                                    <i class="fas fa-sitemap text-green-600 text-xs"></i>
+                                </div>
+                                <h5 class="text-sm font-medium text-gray-900">{{ subgrupo.nombre }}</h5>
+                            </div>
+                            <span class="text-xs bg-white text-gray-700 px-2 py-1 rounded-full border">
+                                {{ subgrupo.producto_set.count }} productos
+                            </span>
+                        </div>
+                        
+                        <!-- Lista de productos compacta (primeros 3) -->
+                        <div class="space-y-1 mb-2">
+                            {% for producto in subgrupo.producto_set.all|slice:":3" %}
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600 truncate flex-1 mr-2" title="{{ producto.nombre }}">
+                                    {{ producto.nombre|truncatechars:25 }}
+                                </span>
+                                <div class="flex items-center space-x-1">
+                                    <span class="{% if producto.stock == 0 %}text-red-600{% elif producto.stock <= 10 %}text-yellow-600{% else %}text-green-600{% endif %} font-medium">
+                                        {{ producto.stock }}
+                                    </span>
+                                    {% if producto.stock == 0 %}
+                                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                                    {% elif producto.stock <= 10 %}
+                                    <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
+                                    {% else %}
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-2">
+                                <p class="text-xs text-gray-500 italic">Sin productos</p>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if subgrupo.producto_set.count > 3 %}
+                            <div class="text-xs text-gray-500 text-center pt-1 border-t border-gray-200">
+                                +{{ subgrupo.producto_set.count|add:"-3" }} más
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Estadísticas compactas del subgrupo -->
+                        <div class="flex justify-between text-xs pt-2 border-t border-gray-200">
+                            <div class="text-center">
+                                <div class="text-green-600 font-medium">
+                                    {% with productos_con_stock=0 %}
+                                        {% for producto in subgrupo.producto_set.all %}
+                                            {% if producto.stock > 10 %}
+                                                {% with productos_con_stock=productos_con_stock|add:1 %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ productos_con_stock }}
+                                    {% endwith %}
+                                </div>
+                                <div class="text-gray-500">Stock OK</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-yellow-600 font-medium">
+                                    {% with productos_stock_bajo=0 %}
+                                        {% for producto in subgrupo.producto_set.all %}
+                                            {% if producto.stock > 0 and producto.stock <= 10 %}
+                                                {% with productos_stock_bajo=productos_stock_bajo|add:1 %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ productos_stock_bajo }}
+                                    {% endwith %}
+                                </div>
+                                <div class="text-gray-500">Bajo</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-red-600 font-medium">
+                                    {% with productos_sin_stock=0 %}
+                                        {% for producto in subgrupo.producto_set.all %}
+                                            {% if producto.stock == 0 %}
+                                                {% with productos_sin_stock=productos_sin_stock|add:1 %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ productos_sin_stock }}
+                                    {% endwith %}
+                                </div>
+                                <div class="text-gray-500">Sin stock</div>
+                            </div>
+                            <div class="text-center">
+                                <a href="{% url 'productos:inventario_gestor' %}?subgrupo={{ subgrupo.id }}" 
+                                   class="text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open text-gray-400 text-xl mb-2"></i>
+                        <p class="text-xs text-gray-500">Sin subgrupos</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% empty %}
+        <div class="text-center py-12">
+            <i class="fas fa-boxes text-gray-400 text-5xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay grupos de productos</h3>
+            <p class="text-gray-500 mb-4">Comienza cargando productos para crear grupos automáticamente</p>
+            <a href="{% url 'usuarios:subir_bd_productos' %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-upload mr-2"></i>
+                Cargar Productos
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base_unified.html' %}
+
+{% block title %}{{ msg.subject }} - RPGestor{% endblock %}
+{% block page_title %}Mensaje{% endblock %}
+{% block page_subtitle %}{{ msg.subject }}{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% if user.groups.first.name == 'Gestor' %}
+    {% include 'menus/gestor_menu.html' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+    {% include 'menus/jefe_ventas_menu.html' %}
+{% else %}
+    {% include 'menus/vendedor_menu.html' %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header del mensaje -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-envelope-open text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{{ msg.subject }}</h2>
+                        <p class="text-blue-100 text-sm">Mensaje interno</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if not msg.read %}
+                        <span class="bg-yellow-400 text-yellow-900 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            Nuevo
+                        </span>
+                    {% endif %}
+                    <span class="text-blue-100 text-sm">
+                        <i class="fas fa-clock mr-1"></i>
+                        {{ msg.timestamp|date:"d/m/Y H:i" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del remitente -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-user text-white"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">
+                        {{ msg.sender.get_full_name|default:msg.sender.username }}
+                    </h3>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-at mr-1"></i>
+                        {{ msg.sender.username }}
+                        {% if msg.sender.groups.first %}
+                            • {{ msg.sender.groups.first.name }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido del mensaje -->
+        <div class="p-6">
+            <div class="bg-gray-50 rounded-lg p-6 border-l-4 border-blue-500">
+                <div class="prose max-w-none">
+                    <div class="whitespace-pre-wrap text-gray-800 leading-relaxed">{{ msg.body }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <a href="{% url 'notificaciones:inbox' %}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Volver a Bandeja
+                </a>
+                
+                <div class="flex space-x-3">
+                    <a href="{% url 'notificaciones:enviar' %}" 
+                       class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                        <i class="fas fa-reply mr-2"></i>
+                        Responder
+                    </a>
+                    
+                    <button onclick="window.print()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                        <i class="fas fa-print mr-2"></i>
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+            Información del Mensaje
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-700 mb-2">Estado</h4>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if msg.read %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    <i class="fas fa-circle mr-1 text-xs"></i>
+                    {% if msg.read %}Leído{% else %}No leído{% endif %}
+                </span>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium text-gray-700 mb-2">Fecha de envío</h4>
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-calendar mr-1"></i>
+                    {{ msg.timestamp|date:"l, d \d\e F \d\e Y" }}
+                </p>
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-clock mr-1"></i>
+                    {{ msg.timestamp|date:"H:i" }} hrs
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para impresión */
+@media print {
+    .sidebar, header, .bg-gray-50:last-child {
+        display: none !important;
+    }
+    
+    .bg-gradient-to-r {
+        background: #3b82f6 !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .content-overlay {
+        background: white !important;
+    }
+}
+</style>
+{% endblock %}

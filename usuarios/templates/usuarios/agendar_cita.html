@@ -1,0 +1,326 @@
+{% extends 'base_unified.html' %}
+{% load static %}
+
+{% block title %}Agendar Cita - RPGestor{% endblock %}
+{% block page_title %}Agendar Cita{% endblock %}
+{% block page_subtitle %}Programa una cita con un vendedor{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+{% block dashboard_url %}
+{% if user.groups.first.name == 'Gestor' %}
+{% url 'usuarios:dashboard_gestor' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+{% url 'usuarios:dashboard_jefeventas' %}
+{% else %}
+{% url 'usuarios:dashboard_vendedor' %}
+{% endif %}
+{% endblock %}
+
+{% block sidebar_menu %}
+{% if user.groups.first.name == 'Gestor' %}
+{% include 'menus/gestor_menu.html' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+{% include 'menus/jefe_ventas_menu.html' %}
+{% else %}
+{% include 'menus/vendedor_menu.html' %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Formulario de agendar cita -->
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <i class="fas fa-calendar-plus text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Nueva Cita</h3>
+                    <p class="text-sm text-gray-600">Completa la información para agendar la cita</p>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Selección de vendedor -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="vendedor_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user-tie text-gray-500 mr-1"></i>
+                            Vendedor *
+                        </label>
+                        <select name="vendedor_id" id="vendedor_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Seleccionar vendedor...</option>
+                            {% for vendedor in vendedores %}
+                            <option value="{{ vendedor.id }}"
+                                data-nombre="{{ vendedor.user.get_full_name|default:vendedor.user.username }}"
+                                data-email="{{ vendedor.user.email|default:'' }}"
+                                data-username="{{ vendedor.user.username }}">
+                                {{ vendedor.user.get_full_name|default:vendedor.user.username }}
+                                {% if vendedor.user.email %} - {{ vendedor.user.email }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Selecciona el vendedor con quien quieres agendar la cita
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Información de la cita -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="titulo" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tag text-gray-500 mr-1"></i>
+                            Motivo de la cita *
+                        </label>
+                        <input type="text" name="titulo" id="titulo" required
+                            placeholder="Ej: Presentación de productos, Seguimiento de pedido..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="prioridad" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-flag text-gray-500 mr-1"></i>
+                            Prioridad
+                        </label>
+                        <select name="prioridad" id="prioridad"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            {% for value, label in prioridades %}
+                            <option value="{{ value }}" {% if value == 'M' %}selected{% endif %}>{{ label }}</option>
+
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fecha y duración -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar text-gray-500 mr-1"></i>
+                            Fecha y hora *
+                        </label>
+                        <input type="datetime-local" name="fecha_inicio" id="fecha_inicio" required
+                            min="{{ hoy|date:'Y-m-d' }}T{{ ahora|time:'H:i' }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="duracion_minutos" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Duración (minutos)
+                        </label>
+                        <select name="duracion_minutos" id="duracion_minutos"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="30">30 minutos</option>
+                            <option value="60" selected>1 hora</option>
+                            <option value="90">1.5 horas</option>
+                            <option value="120">2 horas</option>
+                            <option value="180">3 horas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ubicación y recordatorio -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt text-gray-500 mr-1"></i>
+                            Ubicación
+                        </label>
+                        <input type="text" name="ubicacion" id="ubicacion"
+                            placeholder="Dirección donde se realizará la cita"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            Especifica la ubicación donde se realizará la cita
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="minutos_recordatorio" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-bell text-gray-500 mr-1"></i>
+                            Recordatorio
+                        </label>
+                        <select name="minutos_recordatorio" id="minutos_recordatorio"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="15">15 minutos antes</option>
+                            <option value="30" selected>30 minutos antes</option>
+                            <option value="60">1 hora antes</option>
+                            <option value="120">2 horas antes</option>
+                            <option value="1440">1 día antes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notas adicionales -->
+                <div>
+                    <label for="notas" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sticky-note text-gray-500 mr-1"></i>
+                        Notas adicionales
+                    </label>
+                    <textarea name="notas" id="notas" rows="4"
+                        placeholder="Información adicional sobre la cita, temas a tratar, documentos a llevar..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <!-- Información del vendedor seleccionado -->
+                <div id="vendedor-info" class="hidden bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">
+                        <i class="fas fa-info-circle text-blue-600 mr-1"></i>
+                        Información del Vendedor
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Nombre:</span>
+                            <span id="info-nombre" class="ml-1 font-medium"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Email:</span>
+                            <span id="info-email" class="ml-1"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Usuario:</span>
+                            <span id="info-username" class="ml-1"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex justify-between pt-6 border-t border-gray-200">
+                    <a href="{% url 'usuarios:mi_agenda' %}"
+                        class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Volver a la agenda
+                    </a>
+
+                    <div class="space-x-3">
+                        <button type="button" onclick="limpiarFormulario()"
+                            class="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-eraser mr-2"></i>
+                            Limpiar
+                        </button>
+
+                        <button type="submit"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                            <i class="fas fa-calendar-plus mr-2"></i>
+                            Agendar Cita
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Consejos para una cita exitosa -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 class="font-medium text-blue-900 mb-2">
+                <i class="fas fa-lightbulb text-blue-600 mr-1"></i>
+                Consejos para una cita exitosa
+            </h4>
+            <ul class="text-sm text-blue-800 space-y-1">
+                <li><i class="fas fa-check text-blue-600 mr-2"></i>Confirma la cita con el vendedor 1 día antes</li>
+                <li><i class="fas fa-check text-blue-600 mr-2"></i>Prepara los materiales y documentos necesarios</li>
+                <li><i class="fas fa-check text-blue-600 mr-2"></i>Llega 10 minutos antes de la hora acordada</li>
+                <li><i class="fas fa-check text-blue-600 mr-2"></i>Define objetivos claros para la reunión</li>
+                <li><i class="fas fa-check text-blue-600 mr-2"></i>Haz seguimiento después de la cita</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Autocompletar información del vendedor
+    document.getElementById('vendedor_id').addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const vendedorInfo = document.getElementById('vendedor-info');
+
+        if (this.value) {
+            // Mostrar información del vendedor
+            document.getElementById('info-nombre').textContent = selectedOption.dataset.nombre || 'No especificado';
+            document.getElementById('info-email').textContent = selectedOption.dataset.email || 'No especificado';
+            document.getElementById('info-username').textContent = selectedOption.dataset.username || 'No especificado';
+
+            vendedorInfo.classList.remove('hidden');
+        } else {
+            vendedorInfo.classList.add('hidden');
+        }
+    });
+
+    // Función para limpiar el formulario
+    function limpiarFormulario() {
+        if (confirm('¿Estás seguro de que quieres limpiar todos los campos?')) {
+            document.querySelector('form').reset();
+            document.getElementById('vendedor-info').classList.add('hidden');
+        }
+    }
+
+    // Validar fecha mínima (no permitir fechas pasadas)
+    document.addEventListener('DOMContentLoaded', function () {
+        const fechaInput = document.getElementById('fecha_inicio');
+        const ahora = new Date();
+
+        // Formatear fecha actual para el input datetime-local
+        const año = ahora.getFullYear();
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const día = String(ahora.getDate()).padStart(2, '0');
+        const hora = String(ahora.getHours()).padStart(2, '0');
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+
+        const fechaMinima = `${año}-${mes}-${día}T${hora}:${minutos}`;
+        fechaInput.min = fechaMinima;
+
+        // Establecer fecha por defecto (1 hora desde ahora)
+        const fechaDefecto = new Date(ahora.getTime() + 60 * 60 * 1000);
+        const añoD = fechaDefecto.getFullYear();
+        const mesD = String(fechaDefecto.getMonth() + 1).padStart(2, '0');
+        const díaD = String(fechaDefecto.getDate()).padStart(2, '0');
+        const horaD = String(fechaDefecto.getHours()).padStart(2, '0');
+        const minutosD = String(fechaDefecto.getMinutes()).padStart(2, '0');
+
+        fechaInput.value = `${añoD}-${mesD}-${díaD}T${horaD}:${minutosD}`;
+    });
+
+    // Validación del formulario antes del envío
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const vendedorId = document.getElementById('vendedor_id').value;
+        const titulo = document.getElementById('titulo').value.trim();
+        const fechaInicio = document.getElementById('fecha_inicio').value;
+
+        if (!vendedorId) {
+            e.preventDefault();
+            alert('Por favor selecciona un vendedor para la cita.');
+            document.getElementById('vendedor_id').focus();
+            return;
+        }
+
+        if (!titulo) {
+            e.preventDefault();
+            alert('Por favor especifica el motivo de la cita.');
+            document.getElementById('titulo').focus();
+            return;
+        }
+
+        if (!fechaInicio) {
+            e.preventDefault();
+            alert('Por favor selecciona la fecha y hora de la cita.');
+            document.getElementById('fecha_inicio').focus();
+            return;
+        }
+
+        // Validar que la fecha no sea en el pasado
+        const fechaSeleccionada = new Date(fechaInicio);
+        const ahora = new Date();
+
+        if (fechaSeleccionada <= ahora) {
+            e.preventDefault();
+            alert('La fecha y hora de la cita debe ser en el futuro.');
+            document.getElementById('fecha_inicio').focus();
+            return;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,367 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Subir Base de Datos de Productos - RPGestor{% endblock %}
+{% block page_title %}Subir Base de Datos de Productos{% endblock %}
+{% block page_subtitle %}Carga masiva de productos por grupo y subgrupo{% endblock %}
+{% block user_role %}Gestor{% endblock %}
+{% block dashboard_url %}{% url 'usuarios:dashboard_gestor' %}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/gestor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Selector de grupo y subgrupo -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-layer-group mr-2"></i>Seleccionar Categoría
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Grupo</label>
+                <select id="grupo_select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Seleccionar grupo...</option>
+                    {% for grupo in grupos %}
+                    <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subgrupo</label>
+                <select id="subgrupo_select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <option value="">Primero selecciona un grupo</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instrucciones y formato -->
+    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-medium text-green-900 mb-2">Formato de Archivo de Productos</h3>
+                <p class="text-green-800 mb-4">
+                    El archivo debe ser un Excel (.xlsx) o CSV (.csv) con las siguientes columnas:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold text-green-900 mb-2">Columnas Obligatorias:</h4>
+                        <ul class="text-sm text-green-800 space-y-1">
+                            <li>• <strong>codigo</strong> - Código único del producto</li>
+                            <li>• <strong>nombre</strong> - Nombre del producto</li>
+                            <li>• <strong>precio1</strong> - Precio lista 1</li>
+                            <li>• <strong>precio2</strong> - Precio lista 2</li>
+                            <li>• <strong>stock</strong> - Cantidad en inventario</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-green-900 mb-2">Columnas Opcionales:</h4>
+                        <ul class="text-sm text-green-800 space-y-1">
+                            <li>• <strong>precio3</strong> - Precio lista 3</li>
+                            <li>• <strong>precio4</strong> - Precio lista 4</li>
+                            <li>• <strong>precio5</strong> - Precio lista 5</li>
+                            <li>• <strong>precio6</strong> - Precio lista 6</li>
+                            <li>• <strong>iva</strong> - Porcentaje de IVA</li>
+                            <li>• <strong>descuento</strong> - Porcentaje de descuento</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a href="#" class="inline-flex items-center text-green-600 hover:text-green-800">
+                        <i class="fas fa-download mr-2"></i>
+                        Descargar plantilla de productos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de carga -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">
+            <i class="fas fa-upload mr-2"></i>Cargar Archivo de Productos
+        </h3>
+        
+        <form method="POST" enctype="multipart/form-data" id="uploadProductosForm">
+            {% csrf_token %}
+            <div class="space-y-6">
+                <!-- Campos ocultos para grupo y subgrupo -->
+                <input type="hidden" name="grupo_id" id="grupo_id">
+                <input type="hidden" name="subgrupo_id" id="subgrupo_id">
+                
+                <!-- Selector de archivo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Seleccionar Archivo de Productos
+                    </label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="archivo_productos" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                <p class="mb-2 text-sm text-gray-500">
+                                    <span class="font-semibold">Haz clic para cargar</span> o arrastra y suelta
+                                </p>
+                                <p class="text-xs text-gray-500">Excel (.xlsx) o CSV (.csv)</p>
+                            </div>
+                            <input id="archivo_productos" name="archivo_productos" type="file" class="hidden" accept=".xlsx,.csv" required>
+                        </label>
+                    </div>
+                    <div id="archivo-productos-info" class="mt-2 text-sm text-gray-600 hidden">
+                        <i class="fas fa-file mr-1"></i>
+                        <span id="archivo-productos-nombre"></span>
+                        <span id="archivo-productos-tamaño" class="text-gray-500 ml-2"></span>
+                    </div>
+                </div>
+
+                <!-- Opciones de procesamiento -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Modo de Actualización
+                        </label>
+                        <select name="modo_actualizacion" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="actualizar">Actualizar existentes y agregar nuevos</option>
+                            <option value="solo_nuevos">Solo agregar nuevos productos</option>
+                            <option value="solo_actualizar">Solo actualizar existentes</option>
+                            <option value="reemplazar">Reemplazar todos los productos del subgrupo</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Opciones de Precios
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="actualizar_precios" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Actualizar precios existentes</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="actualizar_stock" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Actualizar stock existente</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Valores por defecto -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-900 mb-3">Valores por Defecto (si no se especifican en el archivo)</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">IVA (%)</label>
+                            <input type="number" name="iva_default" value="19" step="0.01" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Descuento (%)</label>
+                            <input type="number" name="descuento_default" value="0" step="0.01" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Stock Inicial</label>
+                            <input type="number" name="stock_default" value="0" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Precio Base</label>
+                            <input type="number" name="precio_default" value="0" step="0.01" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex space-x-4">
+                    <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition-colors flex items-center" disabled id="btn-procesar">
+                        <i class="fas fa-upload mr-2"></i>
+                        Procesar Productos
+                    </button>
+                    <button type="button" onclick="previewProductos()" class="bg-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-700 transition-colors flex items-center" disabled id="btn-preview">
+                        <i class="fas fa-eye mr-2"></i>
+                        Vista Previa
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Área de resultados -->
+    <div id="resultados-productos" class="hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar mr-2"></i>Resultados del Procesamiento
+            </h3>
+            <div id="contenido-resultados-productos">
+                <!-- Los resultados se cargarán aquí via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Datos de subgrupos por grupo
+const subgruposPorGrupo = {
+    {% for grupo in grupos %}
+    {{ grupo.id }}: [
+        {% for subgrupo in grupo.subgrupo_set.all %}
+        {id: {{ subgrupo.id }}, nombre: "{{ subgrupo.nombre }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Manejo del selector de grupo
+document.getElementById('grupo_select').addEventListener('change', function() {
+    const grupoId = this.value;
+    const subgrupoSelect = document.getElementById('subgrupo_select');
+    const grupoIdInput = document.getElementById('grupo_id');
+    const subgrupoIdInput = document.getElementById('subgrupo_id');
+    
+    // Limpiar subgrupo
+    subgrupoSelect.innerHTML = '<option value="">Seleccionar subgrupo...</option>';
+    subgrupoIdInput.value = '';
+    
+    if (grupoId) {
+        grupoIdInput.value = grupoId;
+        subgrupoSelect.disabled = false;
+        
+        // Cargar subgrupos
+        const subgrupos = subgruposPorGrupo[grupoId] || [];
+        subgrupos.forEach(subgrupo => {
+            const option = document.createElement('option');
+            option.value = subgrupo.id;
+            option.textContent = subgrupo.nombre;
+            subgrupoSelect.appendChild(option);
+        });
+    } else {
+        grupoIdInput.value = '';
+        subgrupoSelect.disabled = true;
+        subgrupoSelect.innerHTML = '<option value="">Primero selecciona un grupo</option>';
+    }
+    
+    checkFormReady();
+});
+
+// Manejo del selector de subgrupo
+document.getElementById('subgrupo_select').addEventListener('change', function() {
+    document.getElementById('subgrupo_id').value = this.value;
+    checkFormReady();
+});
+
+// Manejo del selector de archivos
+document.getElementById('archivo_productos').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const infoDiv = document.getElementById('archivo-productos-info');
+    const nombreSpan = document.getElementById('archivo-productos-nombre');
+    const tamañoSpan = document.getElementById('archivo-productos-tamaño');
+    
+    if (file) {
+        nombreSpan.textContent = file.name;
+        tamañoSpan.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        infoDiv.classList.remove('hidden');
+    } else {
+        infoDiv.classList.add('hidden');
+    }
+    
+    checkFormReady();
+});
+
+// Verificar si el formulario está listo
+function checkFormReady() {
+    const grupoId = document.getElementById('grupo_id').value;
+    const subgrupoId = document.getElementById('subgrupo_id').value;
+    const archivo = document.getElementById('archivo_productos').files[0];
+    
+    const btnProcesar = document.getElementById('btn-procesar');
+    const btnPreview = document.getElementById('btn-preview');
+    
+    const ready = grupoId && subgrupoId && archivo;
+    
+    btnProcesar.disabled = !ready;
+    btnPreview.disabled = !ready;
+    
+    if (ready) {
+        btnProcesar.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnPreview.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+        btnProcesar.classList.add('opacity-50', 'cursor-not-allowed');
+        btnPreview.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Función para vista previa
+function previewProductos() {
+    const fileInput = document.getElementById('archivo_productos');
+    if (!fileInput.files[0]) {
+        alert('Por favor selecciona un archivo primero');
+        return;
+    }
+    
+    // Aquí implementaremos la vista previa via AJAX
+    alert('Función de vista previa en desarrollo');
+}
+
+// Manejo del formulario
+document.getElementById('uploadProductosForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const grupoId = document.getElementById('grupo_id').value;
+    const subgrupoId = document.getElementById('subgrupo_id').value;
+    const fileInput = document.getElementById('archivo_productos');
+    
+    if (!grupoId || !subgrupoId) {
+        alert('Por favor selecciona grupo y subgrupo');
+        return;
+    }
+    
+    if (!fileInput.files[0]) {
+        alert('Por favor selecciona un archivo');
+        return;
+    }
+    
+    // Mostrar indicador de carga
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+    submitBtn.disabled = true;
+    
+    // Enviar formulario
+    const formData = new FormData(this);
+    
+    fetch(this.action || window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Mostrar resultados
+        document.getElementById('resultados-productos').classList.remove('hidden');
+        document.getElementById('contenido-resultados-productos').innerHTML = data.html || 'Procesamiento completado';
+        
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        checkFormReady();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al procesar el archivo');
+        
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        checkFormReady();
+    });
+});
+
+// Inicializar estado del formulario
+checkFormReady();
+</script>
+{% endblock %}

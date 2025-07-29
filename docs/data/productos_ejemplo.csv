@@ -1,0 +1,3 @@
+Codigo,Nombre,Grupo,Subgrupo,IVA,Descuento,Precio1,Precio2,Precio3,Precio4,Precio5,Precio6,Stock,id
+TEST001,Producto Test 1,TestGrupo,TestSubgrupo,19,0,1000,950,900,850,800,750,10,1
+TEST002,Producto Test 2,TestGrupo2,TestSubgrupo2,19,5,2000,1900,1800,1700,1600,1500,20,2

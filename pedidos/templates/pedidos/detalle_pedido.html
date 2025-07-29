@@ -1,0 +1,672 @@
+{% extends 'base_unified.html' %}
+{% load currency_filters %}
+
+{% block title %}Pedido #{{ pedido.pk }} - RPGestor{% endblock %}
+{% block page_title %}Detalle del Pedido{% endblock %}
+{% block page_subtitle %}Pedido #{{ pedido.pk }} - {{ pedido.cliente.data.Empresa|default:pedido.cliente.data.Razon_Comercial }}{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/vendedor_menu.html' %}
+{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Información del pedido -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-file-alt text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Pedido #{{ pedido.pk }}</h2>
+                        <p class="text-blue-100 text-sm">{{ pedido.cliente.data.Empresa|default:pedido.cliente.data.Razon_Comercial }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if pedido.estado == 'B' %}
+                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i>
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    {% elif pedido.estado == 'E' %}
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-paper-plane mr-1"></i>
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    {% elif pedido.estado == 'F' %}
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    {% else %}
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del cliente y pedido -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <!-- Información del cliente expandida -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-building text-blue-600 mr-2"></i>
+                    Información del Cliente
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white rounded-lg p-4 border">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Empresa</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Empresa|default:pedido.cliente.data.Razon_Comercial|default:"No especificado" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">NIT / Código</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Nit|default:pedido.cliente.data.Codigo|default:"No especificado" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Razón Comercial</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Razon_Comercial|default:"No especificado" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Dirección</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Direccion|default:"No especificado" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Teléfono</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Telefono|default:"No especificado" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Email</p>
+                        <p class="font-semibold text-gray-900">{{ pedido.cliente.data.Email|default:"No especificado" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información del pedido -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-calendar text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Fecha del Pedido</p>
+                        <p class="font-medium text-gray-900">{{ pedido.fecha|date:"d/m/Y" }}</p>
+                        <p class="text-xs text-gray-500">{{ pedido.created_at|date:"H:i" }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-user text-purple-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Vendedor</p>
+                        <p class="font-medium text-gray-900">{{ pedido.vendedor.user.get_full_name|default:pedido.vendedor.user.username }}</p>
+                        <p class="text-sm text-gray-500">@{{ pedido.vendedor.username }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-dollar-sign text-orange-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Valor Total</p>
+                        <p class="font-bold text-lg text-green-600">{{ pedido.total|currency_cop }}</p>
+                        <p class="text-xs text-gray-500">{{ pedido.items.all|length }} producto{{ pedido.items.all|length|pluralize }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nota del pedido -->
+            {% if pedido.nota %}
+            <div class="mt-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-sticky-note text-yellow-600 mr-2"></i>
+                    Nota del Pedido
+                </h3>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">{{ pedido.nota }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Items del pedido -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-list text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Productos del Pedido</h2>
+                        <p class="text-green-100 text-sm">{{ pedido.items.all|length }} productos seleccionados</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de productos -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-barcode mr-1"></i>
+                            Código
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-box mr-1"></i>
+                            Producto
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-dollar-sign mr-1"></i>
+                            Precio Unit.
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sort-numeric-up mr-1"></i>
+                            Cantidad
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-calculator mr-1"></i>
+                            Subtotal
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in pedido.items.all %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ item.producto.codigo }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-box text-white text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ item.producto.nombre }}</div>
+                                    <div class="text-sm text-gray-500">{{ item.producto.grupo.nombre }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.precio_unitario|currency_cop }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ item.cantidad }} unidades
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                            {{ item.subtotal|currency_cop }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-box-open text-gray-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Sin productos</h3>
+                                <p class="text-gray-500">Este pedido no tiene productos agregados.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex justify-end">
+                <div class="w-80">
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm text-gray-600">Subtotal:</span>
+                        <span class="text-sm font-medium text-gray-900">
+                            {% widthratio pedido.total 1.19 1 as subtotal %}
+                            {{ subtotal|floatformat:0|currency_cop }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm text-gray-600">IVA (19%):</span>
+                        <span class="text-sm font-medium text-gray-900">{{ pedido.iva_total|currency_cop }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-t border-gray-200">
+                        <span class="text-base font-medium text-gray-900">Total:</span>
+                        <span class="text-base font-bold text-green-600">{{ pedido.total|currency_cop }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmación Final del Pedido -->
+    {% if pedido.estado == 'E' %}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
+            <div class="flex items-center">
+                <i class="fas fa-check-double text-white text-2xl mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-semibold text-white">Confirmación Final del Pedido</h2>
+                    <p class="text-orange-100 text-sm">Última verificación antes de finalizar</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">¿Qué sucederá al finalizar?</h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Se generará automáticamente el archivo CSV del pedido</li>
+                                <li>Se enviará el correo al gestor con toda la información</li>
+                                <li>El pedido cambiará a estado "Finalizado"</li>
+                                <li>Opcionalmente, se puede enviar copia al cliente</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="finalizar-pedido-form" class="space-y-4">
+                {% csrf_token %}
+                
+                <!-- Opción de enviar al cliente -->
+                <div class="p-4 bg-gray-50 rounded-lg space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" 
+                               id="enviar-cliente" 
+                               name="enviar_cliente"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                        <label for="enviar-cliente" class="flex items-center cursor-pointer">
+                            <i class="fas fa-envelope text-gray-500 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-900">Enviar copia del pedido al cliente por correo electrónico</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Opciones de email del cliente (se muestra cuando se marca el checkbox) -->
+                    <div id="email-options" class="hidden space-y-3 pl-6 border-l-2 border-blue-200">
+                        <div class="text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-at text-blue-500 mr-1"></i>
+                            Selecciona el email de destino:
+                        </div>
+                        
+                        <!-- Email de la base de datos -->
+                        {% if pedido.cliente.data.Email %}
+                        <div class="flex items-center space-x-3">
+                            <input type="radio" 
+                                   id="email-bd" 
+                                   name="email_option" 
+                                   value="bd"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                                   checked>
+                            <label for="email-bd" class="flex items-center cursor-pointer">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-gray-900">Email registrado en base de datos</span>
+                                    <span class="text-xs text-gray-500">{{ pedido.cliente.data.Email }}</span>
+                                </div>
+                            </label>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Email manual -->
+                        <div class="flex items-center space-x-3">
+                            <input type="radio" 
+                                   id="email-manual" 
+                                   name="email_option" 
+                                   value="manual"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                                   {% if not pedido.cliente.data.Email %}checked{% endif %}>
+                            <label for="email-manual" class="flex items-center cursor-pointer">
+                                <span class="text-sm font-medium text-gray-900">Ingresar email manualmente</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Campo de email manual -->
+                        <div id="email-manual-field" class="{% if pedido.cliente.data.Email %}hidden{% endif %} pl-6">
+                            <input type="email" 
+                                   id="email-manual-input" 
+                                   name="email_manual"
+                                   placeholder="ejemplo@correo.com"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            <p class="text-xs text-gray-500 mt-1">Ingresa el email donde quieres enviar el pedido</p>
+                        </div>
+                        
+                        {% if not pedido.cliente.data.Email %}
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">
+                                        Este cliente no tiene email registrado en la base de datos. 
+                                        Debes ingresar un email manualmente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Botón de finalizar -->
+                <div class="flex items-center justify-center pt-4">
+                    <button type="submit" 
+                            id="btn-finalizar"
+                            class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg transition-all duration-200 flex items-center text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        <i class="fas fa-check-circle mr-3"></i>
+                        Finalizar Pedido
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% elif pedido.estado == 'F' %}
+    <!-- Pedido ya finalizado -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-white text-2xl mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-semibold text-white">Pedido Finalizado</h2>
+                    <p class="text-green-100 text-sm">Este pedido ya ha sido procesado y enviado</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-green-800">Pedido Completado</h3>
+                        <div class="mt-2 text-sm text-green-700">
+                            <p>Este pedido ha sido finalizado y enviado al gestor. Puedes descargar el archivo CSV si lo necesitas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center">
+                <a href="{% url 'pedidos:descargar_csv' pedido.pk %}" 
+                   class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Descargar CSV
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Navegación -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'usuarios:dashboard_redirect' %}" 
+           class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver al Dashboard
+        </a>
+        
+        <a href="{% url 'pedidos:crear_pedido' %}" 
+           class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            Crear Nuevo Pedido
+        </a>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div id="modal-confirmacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Confirmar Finalización</h3>
+                <p class="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+            </div>
+        </div>
+        
+        <p class="text-gray-700 mb-6">¿Estás seguro de que deseas finalizar este pedido? Se enviará automáticamente al gestor.</p>
+        
+        <div class="flex items-center justify-end space-x-3">
+            <button id="btn-cancelar" class="px-4 py-2 text-gray-500 hover:text-gray-700 transition-colors">
+                Cancelar
+            </button>
+            <button id="btn-confirmar-final" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                Sí, Finalizar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('finalizar-pedido-form');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    const modal = document.getElementById('modal-confirmacion');
+    const btnCancelar = document.getElementById('btn-cancelar');
+    const btnConfirmarFinal = document.getElementById('btn-confirmar-final');
+    const csrftoken = document.querySelector('meta[name=csrf-token]').content;
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            modal.classList.remove('hidden');
+        });
+    }
+
+    if (btnCancelar) {
+        btnCancelar.addEventListener('click', function() {
+            modal.classList.add('hidden');
+        });
+    }
+
+    // Manejar opciones de email
+    const enviarClienteCheckbox = document.getElementById('enviar-cliente');
+    const emailOptions = document.getElementById('email-options');
+    const emailBdRadio = document.getElementById('email-bd');
+    const emailManualRadio = document.getElementById('email-manual');
+    const emailManualField = document.getElementById('email-manual-field');
+    const emailManualInput = document.getElementById('email-manual-input');
+
+    if (enviarClienteCheckbox) {
+        enviarClienteCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                emailOptions.classList.remove('hidden');
+            } else {
+                emailOptions.classList.add('hidden');
+            }
+        });
+    }
+
+    if (emailManualRadio) {
+        emailManualRadio.addEventListener('change', function() {
+            if (this.checked) {
+                emailManualField.classList.remove('hidden');
+                emailManualInput.focus();
+            }
+        });
+    }
+
+    if (emailBdRadio) {
+        emailBdRadio.addEventListener('change', function() {
+            if (this.checked) {
+                emailManualField.classList.add('hidden');
+            }
+        });
+    }
+
+    if (btnConfirmarFinal) {
+        btnConfirmarFinal.addEventListener('click', async function() {
+            const originalText = btnFinalizar.innerHTML;
+            const enviarCliente = document.getElementById('enviar-cliente').checked;
+            
+            let emailCliente = null;
+            let emailOption = null;
+            
+            if (enviarCliente) {
+                // Determinar qué opción de email se seleccionó
+                const emailBd = document.getElementById('email-bd');
+                const emailManual = document.getElementById('email-manual');
+                
+                if (emailBd && emailBd.checked) {
+                    emailOption = 'bd';
+                } else if (emailManual && emailManual.checked) {
+                    emailOption = 'manual';
+                    emailCliente = document.getElementById('email-manual-input').value.trim();
+                    
+                    // Validar email manual
+                    if (!emailCliente) {
+                        showNotification('Debes ingresar un email válido', 'warning');
+                        return;
+                    }
+                    
+                    // Validación básica de email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(emailCliente)) {
+                        showNotification('El formato del email no es válido', 'warning');
+                        return;
+                    }
+                }
+            }
+            
+            try {
+                // Cambiar estado del botón
+                btnFinalizar.disabled = true;
+                btnFinalizar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Finalizando...';
+                
+                // Ocultar modal
+                modal.classList.add('hidden');
+
+                const requestData = {
+                    enviar_cliente: enviarCliente
+                };
+
+                if (enviarCliente) {
+                    requestData.email_option = emailOption;
+                    if (emailOption === 'manual') {
+                        requestData.email_cliente = emailCliente;
+                    }
+                }
+
+                const response = await fetch(`/pedidos/{{ pedido.pk }}/finalizar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Mostrar notificación de éxito
+                    let mensaje = 'Pedido finalizado exitosamente';
+                    if (data.correo_gestor) {
+                        mensaje += ' y enviado al gestor';
+                    }
+                    if (data.correo_cliente) {
+                        mensaje += ' y al cliente';
+                    }
+                    
+                    showNotification(mensaje, 'success');
+                    
+                    // Recargar la página después de un breve delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+
+            } catch (error) {
+                console.error('Error al finalizar pedido:', error);
+                showNotification('Error al finalizar el pedido: ' + error.message, 'error');
+                
+                // Restaurar botón
+                btnFinalizar.disabled = false;
+                btnFinalizar.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Función para mostrar notificaciones
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = {
+            'success': 'bg-green-500',
+            'error': 'bg-red-500',
+            'warning': 'bg-yellow-500',
+            'info': 'bg-blue-500'
+        };
+
+        const iconMap = {
+            'success': 'check-circle',
+            'error': 'exclamation-circle',
+            'warning': 'exclamation-triangle',
+            'info': 'info-circle'
+        };
+
+        notification.className = `fixed top-4 right-4 ${bgColor[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-sm`;
+        notification.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-${iconMap[type]} mr-2"></i>
+                    <span class="text-sm">${message}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto-remove después de 5 segundos
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

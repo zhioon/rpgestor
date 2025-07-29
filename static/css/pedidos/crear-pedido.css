@@ -1,0 +1,157 @@
+/* Estilos específicos para crear pedido */
+
+/* Estilos base para tarjetas de productos */
+.product-card {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Productos normales (sin descuento) */
+.product-card-normal {
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+}
+
+.product-card-normal:hover {
+    border-color: #d1d5db;
+}
+
+/* Productos con descuento */
+.product-card-descuento {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 2px solid #f59e0b;
+    position: relative;
+}
+
+.product-card-descuento:hover {
+    border-color: #d97706;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+/* Badge de descuento */
+.product-card-descuento::after {
+    content: 'DESCUENTO';
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: #f59e0b;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 10;
+}
+
+/* Placeholder de imagen */
+.product-card .w-40 > div {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+}
+
+.product-card-descuento .w-40 > div {
+    background: #fef3c7;
+    border: 2px dashed #f59e0b;
+}
+
+/* Botón especial para productos con descuento */
+.product-card-descuento .add-btn {
+    background: #f59e0b;
+    border: none;
+}
+
+.product-card-descuento .add-btn:hover {
+    background: #d97706;
+}
+
+/* Responsive: Desktop */
+@media (min-width: 768px) {
+    .product-card .flex.items-stretch {
+        min-height: 120px;
+    }
+    
+    .product-card .w-40 > div {
+        min-height: 120px;
+    }
+}
+
+/* Responsive: Móvil */
+@media (max-width: 767px) {
+    .product-card {
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+        border-radius: 0.5rem;
+    }
+    
+    .product-card .h-20 {
+        height: 60px;
+        width: 60px;
+    }
+    
+    /* Carrito sticky en móvil */
+    .lg\:sticky {
+        position: sticky;
+        top: 1rem;
+        z-index: 20;
+    }
+    
+    /* Ajustes de texto para móvil */
+    .product-card .text-lg {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: 700;
+    }
+    
+    .product-card .text-sm {
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+    
+    .product-card .text-base {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+    
+    .product-card .text-xs {
+        font-size: 0.7rem;
+        line-height: 1rem;
+    }
+    
+    /* Botón de agregar en móvil */
+    .product-card .add-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: 0.375rem;
+    }
+    
+    /* Espaciado optimizado para móvil */
+    .product-card .space-y-2 > * + * {
+        margin-top: 0.25rem;
+    }
+    
+    .product-card .space-y-1 > * + * {
+        margin-top: 0.125rem;
+    }
+    
+    /* Carrito compacto en móvil */
+    .max-h-60 {
+        max-height: 180px;
+    }
+    
+    /* Input más pequeño en móvil */
+    .product-card .w-14 {
+        width: 2.5rem;
+        padding: 0.25rem;
+        font-size: 0.75rem;
+    }
+}

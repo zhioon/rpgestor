@@ -1,0 +1,571 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Mensajes al Equipo - RPGestor{% endblock %}
+
+{% block page_title %}Mensajes al Equipo{% endblock %}
+{% block page_subtitle %}Comunicación directa con tu equipo de ventas{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Estadísticas Generales -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Total Mensajes -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-envelope text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Mensajes</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_mensajes }}</p>
+                    <p class="text-sm text-blue-600">Enviados por ti</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensajes No Leídos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 mr-4">
+                    <i class="fas fa-envelope-open text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">No Leídos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ mensajes_no_leidos }}</p>
+                    <p class="text-sm text-red-600">Pendientes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensajes Leídos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Leídos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ mensajes_leidos }}</p>
+                    <p class="text-sm text-green-600">Confirmados</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasa de Lectura -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-percentage text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Tasa de Lectura</h3>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if total_mensajes > 0 %}
+                            {{ mensajes_leidos|floatformat:0 }}{{ mensajes_leidos|add:mensajes_no_leidos|floatformat:0|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </p>
+                    <p class="text-sm text-purple-600">Efectividad</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold text-gray-900">Comunicación con el Equipo</h2>
+            
+            <div class="flex flex-wrap gap-3">
+                <button onclick="abrirModalMensajeGrupal()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-paper-plane mr-2"></i>Nuevo Mensaje
+                </button>
+                
+                <button onclick="abrirModalMensajeTodos()" 
+                        class="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700 transition-colors">
+                    <i class="fas fa-users mr-2"></i>Mensaje a Todos
+                </button>
+                
+                <button onclick="exportarMensajes()" 
+                        class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h3 class="text-lg font-semibold text-gray-900">Filtrar Mensajes</h3>
+            
+            <div class="flex flex-wrap gap-4">
+                <!-- Filtro por Tipo -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Tipo:</label>
+                    <select id="filtro-tipo" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="todos" {% if filtro_tipo == 'todos' %}selected{% endif %}>Todos</option>
+                        {% for tipo_key, tipo_label in tipos_mensaje %}
+                        <option value="{{ tipo_key }}" {% if filtro_tipo == tipo_key %}selected{% endif %}>
+                            {{ tipo_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por Prioridad -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Prioridad:</label>
+                    <select id="filtro-prioridad" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="todos" {% if filtro_prioridad == 'todos' %}selected{% endif %}>Todas</option>
+                        {% for prioridad_key, prioridad_label in prioridades %}
+                        <option value="{{ prioridad_key }}" {% if filtro_prioridad == prioridad_key %}selected{% endif %}>
+                            {{ prioridad_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por Período -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Período:</label>
+                    <select id="filtro-periodo" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="semana" {% if filtro_periodo == 'semana' %}selected{% endif %}>Esta semana</option>
+                        <option value="mes" {% if filtro_periodo == 'mes' %}selected{% endif %}>Este mes</option>
+                        <option value="trimestre" {% if filtro_periodo == 'trimestre' %}selected{% endif %}>Este trimestre</option>
+                        <option value="todos" {% if filtro_periodo == 'todos' %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+
+                <button onclick="aplicarFiltros()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-filter mr-2"></i>Aplicar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Contenido -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Lista de Mensajes Recientes -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Mensajes Recientes</h3>
+                <p class="text-sm text-gray-600 mt-1">Últimos mensajes enviados al equipo</p>
+            </div>
+
+            {% if mensajes_recientes %}
+            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                {% for mensaje in mensajes_recientes %}
+                <div class="p-6 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <!-- Información del Mensaje -->
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <!-- Tipo de Mensaje -->
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if mensaje.tipo == 'M' %}bg-blue-100 text-blue-800
+                                    {% elif mensaje.tipo == 'A' %}bg-red-100 text-red-800
+                                    {% elif mensaje.tipo == 'F' %}bg-green-100 text-green-800
+                                    {% elif mensaje.tipo == 'R' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                    {{ mensaje.get_tipo_display }}
+                                </span>
+
+                                <!-- Prioridad -->
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if mensaje.prioridad == 'U' %}bg-red-100 text-red-800
+                                    {% elif mensaje.prioridad == 'A' %}bg-orange-100 text-orange-800
+                                    {% elif mensaje.prioridad == 'M' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ mensaje.get_prioridad_display }}
+                                </span>
+
+                                <!-- Estado de Lectura -->
+                                {% if mensaje.leido %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Leído
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-clock mr-1"></i>No leído
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <h4 class="text-lg font-semibold text-gray-900 mb-1">{{ mensaje.asunto }}</h4>
+                            <p class="text-gray-600 text-sm mb-2">{{ mensaje.mensaje|truncatechars:100 }}</p>
+                            
+                            <div class="flex items-center space-x-4 text-xs text-gray-500">
+                                <span class="flex items-center">
+                                    <i class="fas fa-user mr-1"></i>
+                                    Para: {{ mensaje.vendedor.user.get_full_name|default:mensaje.vendedor.user.username }}
+                                </span>
+                                <span class="flex items-center">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ mensaje.created_at|timesince }} ago
+                                </span>
+                                {% if mensaje.leido and mensaje.fecha_leido %}
+                                <span class="flex items-center">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Leído {{ mensaje.fecha_leido|timesince }} ago
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="flex-shrink-0 ml-4">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="verMensajeCompleto('{{ mensaje.asunto|escapejs }}', '{{ mensaje.mensaje|escapejs }}', '{{ mensaje.vendedor.user.get_full_name|default:mensaje.vendedor.user.username|escapejs }}', '{{ mensaje.created_at|date:"d/m/Y H:i" }}')" 
+                                        class="text-blue-600 hover:text-blue-800 text-sm">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="responderMensaje({{ mensaje.vendedor.id }}, '{{ mensaje.vendedor.user.get_full_name|default:mensaje.vendedor.user.username|escapejs }}', 'Re: {{ mensaje.asunto|escapejs }}')" 
+                                        class="text-green-600 hover:text-green-800 text-sm">
+                                    <i class="fas fa-reply"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <i class="fas fa-envelope text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No hay mensajes</h3>
+                <p class="text-gray-500 mb-4">No se encontraron mensajes con los filtros aplicados.</p>
+                <button onclick="abrirModalMensajeGrupal()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">
+                    Enviar primer mensaje
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Panel Lateral -->
+        <div class="space-y-6">
+            <!-- Estadísticas por Tipo -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Mensajes por Tipo</h3>
+                <div class="space-y-3">
+                    {% for tipo_key, tipo_data in stats_por_tipo.items %}
+                    {% if tipo_data.count > 0 %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">{{ tipo_data.label }}</span>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ tipo_data.porcentaje }}%"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">{{ tipo_data.count }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Vendedores con Más Mensajes -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Comunicación Frecuente</h3>
+                <div class="space-y-3">
+                    {% for vendedor in vendedores_con_mensajes %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                <span class="text-white text-xs font-bold">
+                                    {{ vendedor.vendedor__user__first_name.0|default:vendedor.vendedor__user__username.0|upper }}{{ vendedor.vendedor__user__last_name.0|upper }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ vendedor.vendedor__user__first_name }} {{ vendedor.vendedor__user__last_name|default:vendedor.vendedor__user__username }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ vendedor.ultimo_mensaje|timesince }} ago</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-900">{{ vendedor.total_mensajes }}</p>
+                            {% if vendedor.mensajes_no_leidos > 0 %}
+                            <p class="text-xs text-red-600">{{ vendedor.mensajes_no_leidos }} sin leer</p>
+                            {% else %}
+                            <p class="text-xs text-green-600">Todo leído</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Nuevo Mensaje Grupal -->
+<div id="modal-mensaje-grupal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Nuevo Mensaje al Equipo</h3>
+            <form id="form-mensaje-grupal">
+                <!-- Destinatarios -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Destinatarios:</label>
+                    <div class="border border-gray-300 rounded-md p-3 max-h-32 overflow-y-auto">
+                        <div class="mb-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="enviar-a-todos" class="mr-2">
+                                <span class="font-medium text-blue-600">Enviar a todo el equipo</span>
+                            </label>
+                        </div>
+                        <div id="lista-vendedores" class="space-y-1">
+                            {% for vendedor in vendedores %}
+                            <label class="flex items-center vendedor-checkbox">
+                                <input type="checkbox" name="destinatarios" value="{{ vendedor.id }}" class="mr-2">
+                                <span>{{ vendedor.user.get_full_name|default:vendedor.user.username }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tipo y Prioridad -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo:</label>
+                        <select id="mensaje-tipo" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% for tipo_key, tipo_label in tipos_mensaje %}
+                            <option value="{{ tipo_key }}">{{ tipo_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad:</label>
+                        <select id="mensaje-prioridad" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            {% for prioridad_key, prioridad_label in prioridades %}
+                            <option value="{{ prioridad_key }}" {% if prioridad_key == 'M' %}selected{% endif %}>{{ prioridad_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Asunto -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asunto:</label>
+                    <input type="text" id="mensaje-asunto" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                           placeholder="Asunto del mensaje...">
+                </div>
+
+                <!-- Mensaje -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje:</label>
+                    <textarea id="mensaje-contenido" rows="6" required 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="Escribe tu mensaje aquí..."></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalMensajeGrupal()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <i class="fas fa-paper-plane mr-2"></i>Enviar Mensaje
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Mensaje Completo -->
+<div id="modal-ver-mensaje" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4" id="ver-mensaje-asunto"></h3>
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 mb-2">
+                    <strong>Para:</strong> <span id="ver-mensaje-destinatario"></span>
+                </p>
+                <p class="text-sm text-gray-600 mb-4">
+                    <strong>Enviado:</strong> <span id="ver-mensaje-fecha"></span>
+                </p>
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p id="ver-mensaje-contenido" class="text-gray-800"></p>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="cerrarModalVerMensaje()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones para modales
+function abrirModalMensajeGrupal() {
+    document.getElementById('modal-mensaje-grupal').classList.remove('hidden');
+}
+
+function abrirModalMensajeTodos() {
+    document.getElementById('enviar-a-todos').checked = true;
+    toggleDestinatarios();
+    abrirModalMensajeGrupal();
+}
+
+function cerrarModalMensajeGrupal() {
+    document.getElementById('modal-mensaje-grupal').classList.add('hidden');
+    document.getElementById('form-mensaje-grupal').reset();
+    document.getElementById('enviar-a-todos').checked = false;
+    toggleDestinatarios();
+}
+
+// Toggle destinatarios
+document.getElementById('enviar-a-todos').addEventListener('change', toggleDestinatarios);
+
+function toggleDestinatarios() {
+    const enviarATodos = document.getElementById('enviar-a-todos').checked;
+    const checkboxes = document.querySelectorAll('input[name="destinatarios"]');
+    const listaVendedores = document.getElementById('lista-vendedores');
+    
+    if (enviarATodos) {
+        listaVendedores.style.opacity = '0.5';
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            cb.disabled = true;
+        });
+    } else {
+        listaVendedores.style.opacity = '1';
+        checkboxes.forEach(cb => {
+            cb.disabled = false;
+        });
+    }
+}
+
+// Enviar mensaje grupal
+document.getElementById('form-mensaje-grupal').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const enviarATodos = document.getElementById('enviar-a-todos').checked;
+    const destinatarios = enviarATodos ? [] : Array.from(document.querySelectorAll('input[name="destinatarios"]:checked')).map(cb => cb.value);
+    
+    if (!enviarATodos && destinatarios.length === 0) {
+        alert('Debe seleccionar al menos un destinatario');
+        return;
+    }
+    
+    const data = {
+        destinatarios: destinatarios,
+        enviar_a_todos: enviarATodos,
+        tipo: document.getElementById('mensaje-tipo').value,
+        prioridad: document.getElementById('mensaje-prioridad').value,
+        asunto: document.getElementById('mensaje-asunto').value,
+        mensaje: document.getElementById('mensaje-contenido').value
+    };
+    
+    // Deshabilitar botón
+    const submitBtn = document.querySelector('#form-mensaje-grupal button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
+    
+    fetch('{% url "usuarios:enviar_mensaje_grupal" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            cerrarModalMensajeGrupal();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar el mensaje. Por favor intenta de nuevo.');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+// Funciones para ver mensaje completo
+function verMensajeCompleto(asunto, contenido, destinatario, fecha) {
+    document.getElementById('ver-mensaje-asunto').textContent = asunto;
+    document.getElementById('ver-mensaje-contenido').textContent = contenido;
+    document.getElementById('ver-mensaje-destinatario').textContent = destinatario;
+    document.getElementById('ver-mensaje-fecha').textContent = fecha;
+    document.getElementById('modal-ver-mensaje').classList.remove('hidden');
+}
+
+function cerrarModalVerMensaje() {
+    document.getElementById('modal-ver-mensaje').classList.add('hidden');
+}
+
+// Función para responder mensaje
+function responderMensaje(vendedorId, vendedorNombre, asuntoRespuesta) {
+    // Abrir modal con datos prellenados
+    abrirModalMensajeGrupal();
+    document.getElementById('mensaje-asunto').value = asuntoRespuesta;
+    
+    // Seleccionar solo el vendedor específico
+    document.getElementById('enviar-a-todos').checked = false;
+    toggleDestinatarios();
+    
+    const checkboxes = document.querySelectorAll('input[name="destinatarios"]');
+    checkboxes.forEach(cb => {
+        cb.checked = cb.value == vendedorId;
+    });
+}
+
+// Aplicar filtros
+function aplicarFiltros() {
+    const tipo = document.getElementById('filtro-tipo').value;
+    const prioridad = document.getElementById('filtro-prioridad').value;
+    const periodo = document.getElementById('filtro-periodo').value;
+    
+    const params = new URLSearchParams();
+    if (tipo !== 'todos') params.append('tipo', tipo);
+    if (prioridad !== 'todos') params.append('prioridad', prioridad);
+    if (periodo !== 'mes') params.append('periodo', periodo);
+    
+    window.location.href = '?' + params.toString();
+}
+
+// Función placeholder para exportar
+function exportarMensajes() {
+    alert('Funcionalidad de exportación en desarrollo');
+}
+
+// Función para obtener cookie CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

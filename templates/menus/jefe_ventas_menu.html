@@ -1,0 +1,87 @@
+
+<!-- Dashboard Principal -->
+<a href="{% url 'usuarios:dashboard_jefeventas_completo' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-chart-line mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Dashboard
+</a>
+
+
+
+<!-- Sección: GESTIÓN DEL EQUIPO -->
+<div class="pt-4 mt-4">
+    <div class="px-2 py-1">
+        <h3 class="text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">Gestión del Equipo</h3>
+    </div>
+    
+    <!-- Mi Equipo -->
+    <a href="{% url 'usuarios:mi_equipo' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-users mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Mi Equipo
+    </a>
+    
+    <!-- Presupuestos y Metas -->
+    <a href="{% url 'usuarios:presupuestos_mensuales' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-dollar-sign mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Presupuestos y Metas
+    </a>
+    
+
+    
+    <!-- Comunicación -->
+    <a href="{% url 'usuarios:mensajes_equipo' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-comments mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Mensajes al Equipo
+    </a>
+</div>
+
+<!-- Sección: AGENDA Y REUNIONES -->
+<div class="pt-4 mt-4">
+    <div class="px-2 py-1">
+        <h3 class="text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">Agenda y Reuniones</h3>
+    </div>
+    
+    <!-- Mi Agenda -->
+    <a href="{% url 'usuarios:mi_agenda' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-calendar-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Mi Agenda
+    </a>
+    
+    <!-- Crear Reuniones -->
+    <a href="{% url 'usuarios:crear_reunion' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-users mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Crear Reuniones
+    </a>
+    
+    <!-- Agendar Citas -->
+    <a href="{% url 'usuarios:agendar_cita' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-user-clock mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Agendar Citas
+    </a>
+</div>
+
+<!-- Sección: COMUNICACIÓN -->
+<div class="pt-4 mt-4">
+    <div class="px-2 py-1">
+        <h3 class="text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">Comunicación</h3>
+    </div>
+    
+    <!-- Mensajes Recibidos -->
+    <a href="{% url 'usuarios:inbox_mensajes' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-inbox mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Bandeja de Entrada
+        <!-- Indicador de mensajes no leídos -->
+        <span id="mensajes-badge" class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 hidden">0</span>
+    </a>
+    
+    
+</div>
+
+

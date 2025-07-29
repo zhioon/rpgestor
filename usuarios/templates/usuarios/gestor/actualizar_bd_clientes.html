@@ -1,0 +1,283 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+{% load mathfilters %}
+
+
+{% block title %}Actualizar Base de Datos de Clientes - RPGestor{% endblock %}
+{% block page_title %}Actualizar Base de Datos de Clientes{% endblock %}
+{% block page_subtitle %}Carga masiva y actualización de información de clientes{% endblock %}
+{% block user_role %}Gestor{% endblock %}
+{% block dashboard_url %}{% url 'usuarios:dashboard_gestor' %}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/gestor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Estadísticas actuales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Clientes</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_clientes }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-user-check text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Clientes Activos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ clientes_activos }}</p>
+                    <p class="text-sm text-green-600">Últimos 30 días</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-percentage text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">% Activos</h3>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if total_clientes > 0 %}
+                            {{ clientes_activos|mul:100|div:total_clientes|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instrucciones y formato -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-lg font-medium text-blue-900 mb-2">Formato de Archivo Requerido</h3>
+                <p class="text-blue-800 mb-4">
+                    El archivo debe ser un Excel (.xlsx) o CSV (.csv) con las siguientes columnas:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold text-blue-900 mb-2">Columnas Obligatorias:</h4>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• <strong>Codigo</strong> - Código único del cliente</li>
+                            <li>• <strong>Nit</strong> - NIT del cliente</li>
+                            <li>• <strong>Empresa</strong> - Nombre de la empresa</li>
+                            <li>• <strong>Email</strong> - Correo electrónico</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-blue-900 mb-2">Columnas Opcionales:</h4>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• <strong>Razon_Comercial</strong> - Razón comercial</li>
+                            <li>• <strong>Direccion</strong> - Dirección física</li>
+                            <li>• <strong>Telefono</strong> - Número de teléfono</li>
+                            <li>• <strong>Ciudad</strong> - Ciudad</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a href="#" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-download mr-2"></i>
+                        Descargar plantilla de ejemplo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de carga -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">
+            <i class="fas fa-upload mr-2"></i>Cargar Archivo de Clientes
+        </h3>
+        
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            <div class="space-y-6">
+                <!-- Selector de archivo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Seleccionar Archivo
+                    </label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="archivo_clientes" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                <p class="mb-2 text-sm text-gray-500">
+                                    <span class="font-semibold">Haz clic para cargar</span> o arrastra y suelta
+                                </p>
+                                <p class="text-xs text-gray-500">Excel (.xlsx) o CSV (.csv)</p>
+                            </div>
+                            <input id="archivo_clientes" name="archivo_clientes" type="file" class="hidden" accept=".xlsx,.csv" required>
+                        </label>
+                    </div>
+                    <div id="archivo-info" class="mt-2 text-sm text-gray-600 hidden">
+                        <i class="fas fa-file mr-1"></i>
+                        <span id="archivo-nombre"></span>
+                        <span id="archivo-tamaño" class="text-gray-500 ml-2"></span>
+                    </div>
+                </div>
+
+                <!-- Opciones de procesamiento -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Modo de Actualización
+                        </label>
+                        <select name="modo_actualizacion" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="actualizar">Actualizar existentes y agregar nuevos</option>
+                            <option value="solo_nuevos">Solo agregar nuevos clientes</option>
+                            <option value="solo_actualizar">Solo actualizar existentes</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Validación de Datos
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="validar_email" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Validar formato de email</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="validar_nit" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Validar formato de NIT</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex space-x-4">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-upload mr-2"></i>
+                        Procesar Archivo
+                    </button>
+                    <button type="button" onclick="previewFile()" class="bg-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-700 transition-colors flex items-center">
+                        <i class="fas fa-eye mr-2"></i>
+                        Vista Previa
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Área de resultados -->
+    <div id="resultados" class="hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar mr-2"></i>Resultados del Procesamiento
+            </h3>
+            <div id="contenido-resultados">
+                <!-- Los resultados se cargarán aquí via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de cargas recientes -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-history mr-2"></i>Historial de Cargas Recientes
+        </h3>
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-clock text-gray-300 text-4xl mb-4"></i>
+            <p>No hay cargas recientes</p>
+            <p class="text-sm">Los registros de cargas aparecerán aquí</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Manejo del selector de archivos
+document.getElementById('archivo_clientes').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const infoDiv = document.getElementById('archivo-info');
+    const nombreSpan = document.getElementById('archivo-nombre');
+    const tamañoSpan = document.getElementById('archivo-tamaño');
+    
+    if (file) {
+        nombreSpan.textContent = file.name;
+        tamañoSpan.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        infoDiv.classList.remove('hidden');
+    } else {
+        infoDiv.classList.add('hidden');
+    }
+});
+
+// Función para vista previa
+function previewFile() {
+    const fileInput = document.getElementById('archivo_clientes');
+    if (!fileInput.files[0]) {
+        alert('Por favor selecciona un archivo primero');
+        return;
+    }
+    
+    // Aquí implementaremos la vista previa via AJAX
+    alert('Función de vista previa en desarrollo');
+}
+
+// Manejo del formulario
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('archivo_clientes');
+    if (!fileInput.files[0]) {
+        alert('Por favor selecciona un archivo');
+        return;
+    }
+    
+    // Mostrar indicador de carga
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+    submitBtn.disabled = true;
+    
+    // Enviar formulario
+    const formData = new FormData(this);
+    
+    fetch(this.action || window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Mostrar resultados
+        document.getElementById('resultados').classList.remove('hidden');
+        document.getElementById('contenido-resultados').innerHTML = data.html || 'Procesamiento completado';
+        
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al procesar el archivo');
+        
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

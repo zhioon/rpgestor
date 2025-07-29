@@ -1,0 +1,296 @@
+{% extends 'base_unified.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - RPGestor{% endblock %}
+{% block page_title %}Mi Perfil{% endblock %}
+{% block page_subtitle %}Configuración de cuenta y preferencias{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Menú específico para perfil -->
+<a href="{% url 'usuarios:profile' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md bg-white bg-opacity-20 text-white">
+    <i class="fas fa-user mr-3"></i>
+    Mi Perfil
+</a>
+
+<a href="{% url 'usuarios:dashboard_redirect' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-tachometer-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Mensajes de estado -->
+    {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} bg-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-50 border border-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-200 text-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-800 px-4 py-3 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Información del perfil -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-8">
+            <div class="flex items-center">
+                <div class="relative">
+                    {% if user.profile.get_profile_picture_url %}
+                        <img src="{{ user.profile.get_profile_picture_url }}" 
+                             alt="Foto de perfil" 
+                             class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg">
+                    {% else %}
+                        <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                            <span class="text-2xl font-bold text-white">{{ user.profile.get_initials }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Botón para cambiar foto -->
+                    <button onclick="document.getElementById('profile-picture-input').click()" 
+                            class="absolute -bottom-2 -right-2 bg-white text-blue-600 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-camera text-sm"></i>
+                    </button>
+                </div>
+                
+                <div class="ml-6">
+                    <h2 class="text-2xl font-bold text-white">
+                        {{ user.get_full_name|default:user.username }}
+                    </h2>
+                    <p class="text-blue-100">@{{ user.username }}</p>
+                    <p class="text-blue-100 text-sm">{{ user.groups.first.name|default:"Usuario" }}</p>
+                    <p class="text-blue-100 text-sm">
+                        <i class="fas fa-envelope mr-1"></i>
+                        {{ user.email }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario oculto para subir foto -->
+    <form id="profile-picture-form" action="{% url 'usuarios:upload_profile_picture' %}" method="post" enctype="multipart/form-data" style="display: none;">
+        {% csrf_token %}
+        <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" onchange="uploadProfilePicture()">
+    </form>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Información Personal -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-user-edit text-white text-xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-white">Información Personal</h3>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form action="{% url 'usuarios:update_profile' %}" method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="{{ profile_form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-1 text-gray-500"></i>
+                            Nombre
+                        </label>
+                        {{ profile_form.first_name }}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ profile_form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-1 text-gray-500"></i>
+                            Apellido
+                        </label>
+                        {{ profile_form.last_name }}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ profile_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-1 text-gray-500"></i>
+                            Email
+                        </label>
+                        {{ profile_form.email }}
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i>
+                        Actualizar Información
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Cambiar Contraseña -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-red-500 to-pink-600 px-6 py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-lock text-white text-xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-white">Cambiar Contraseña</h3>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form action="{% url 'usuarios:change_password' %}" method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="{{ password_form.old_password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-1 text-gray-500"></i>
+                            Contraseña Actual
+                        </label>
+                        <input type="password" 
+                               id="{{ password_form.old_password.id_for_label }}"
+                               name="old_password"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                    </div>
+                    
+                    <div>
+                        <label for="{{ password_form.new_password1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-1 text-gray-500"></i>
+                            Nueva Contraseña
+                        </label>
+                        <input type="password" 
+                               id="{{ password_form.new_password1.id_for_label }}"
+                               name="new_password1"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                    </div>
+                    
+                    <div>
+                        <label for="{{ password_form.new_password2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-1 text-gray-500"></i>
+                            Confirmar Nueva Contraseña
+                        </label>
+                        <input type="password" 
+                               id="{{ password_form.new_password2.id_for_label }}"
+                               name="new_password2"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Cambiar Contraseña
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la cuenta -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-white text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-white">Información de la Cuenta</h3>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-calendar text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Miembro desde</p>
+                        <p class="font-medium text-gray-900">{{ user.date_joined|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-clock text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Último acceso</p>
+                        <p class="font-medium text-gray-900">{{ user.last_login|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-users text-purple-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Rol</p>
+                        <p class="font-medium text-gray-900">{{ user.groups.first.name|default:"Usuario" }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-check-circle text-orange-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Estado</p>
+                        <p class="font-medium text-green-600">
+                            <i class="fas fa-circle text-green-500 text-xs mr-1"></i>
+                            Activo
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="flex items-center justify-center">
+        <a href="{% url 'usuarios:dashboard_redirect' %}" 
+           class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver al Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+function uploadProfilePicture() {
+    const form = document.getElementById('profile-picture-form');
+    const fileInput = document.getElementById('profile-picture-input');
+    
+    if (fileInput.files.length > 0) {
+        // Mostrar loading
+        const button = document.querySelector('button[onclick*="profile-picture-input"]');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+        button.disabled = true;
+        
+        // Enviar formulario
+        form.submit();
+    }
+}
+
+// Validación de contraseñas en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const newPassword1 = document.getElementById('{{ password_form.new_password1.id_for_label }}');
+    const newPassword2 = document.getElementById('{{ password_form.new_password2.id_for_label }}');
+    
+    if (newPassword1 && newPassword2) {
+        function validatePasswords() {
+            if (newPassword1.value && newPassword2.value) {
+                if (newPassword1.value === newPassword2.value) {
+                    newPassword2.classList.remove('border-red-500');
+                    newPassword2.classList.add('border-green-500');
+                } else {
+                    newPassword2.classList.remove('border-green-500');
+                    newPassword2.classList.add('border-red-500');
+                }
+            }
+        }
+        
+        newPassword1.addEventListener('input', validatePasswords);
+        newPassword2.addEventListener('input', validatePasswords);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPGestor - Sesión Cerrada</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para gráficos de fondo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .chart-container {
+            position: absolute;
+            opacity: 0.08;
+            pointer-events: none;
+        }
+        
+        .divider-line {
+            width: 1px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full gradient-bg overflow-hidden">
+    <!-- Gráficos de fondo animados (mismo fondo hermoso) -->
+    <div class="chart-container top-10 left-10 w-32 h-32 animate-float">
+        <canvas id="bgChart1"></canvas>
+    </div>
+    <div class="chart-container top-20 right-20 w-24 h-24 animate-pulse-slow">
+        <canvas id="bgChart2"></canvas>
+    </div>
+    <div class="chart-container bottom-20 left-20 w-28 h-28 animate-float" style="animation-delay: 2s;">
+        <canvas id="bgChart3"></canvas>
+    </div>
+    <div class="chart-container bottom-10 right-10 w-20 h-20 animate-pulse-slow" style="animation-delay: 1s;">
+        <canvas id="bgChart4"></canvas>
+    </div>
+    
+    <!-- Elementos decorativos flotantes -->
+    <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full opacity-20 animate-ping"></div>
+    <div class="absolute top-3/4 right-1/3 w-3 h-3 bg-blue-200 rounded-full opacity-30 animate-pulse"></div>
+    <div class="absolute top-1/2 left-1/6 w-1 h-1 bg-white rounded-full opacity-40 animate-bounce"></div>
+    
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col lg:flex-row items-center lg:space-x-16 space-y-8 lg:space-y-0 w-full max-w-4xl">
+            <!-- Logo lado izquierdo -->
+            <div class="text-center flex flex-col items-center w-full lg:w-auto">
+                <img src="{% static 'img/logo-rpgestor.png' %}" alt="RPGestor Logo" class="h-20 w-auto mb-4 opacity-90">
+                <h1 class="text-6xl font-light text-white tracking-wide">RPGestor</h1>
+            </div>
+            
+            <!-- Línea divisoria vertical para pantallas grandes -->
+            <div class="divider-line hidden lg:block"></div>
+            
+            <!-- Línea divisoria horizontal para pantallas pequeñas -->
+            <div class="w-full h-px bg-white bg-opacity-30 lg:hidden"></div>
+
+            <!-- Mensaje de logout lado derecho -->
+            <div class="w-full max-w-md lg:w-80">
+                <div class="mb-6">
+                    <h2 class="text-white text-lg font-light mb-8 text-center lg:text-left">Sesión Cerrada</h2>
+                </div>
+
+                <!-- Mensaje de confirmación -->
+                <div class="bg-green-500 bg-opacity-20 border border-green-400 text-white px-6 py-4 rounded mb-8" role="alert">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle mr-3 text-green-300"></i>
+                        <div>
+                            <p class="font-medium">Sesión cerrada exitosamente</p>
+                            <p class="text-sm text-green-200 mt-1">Has salido de tu cuenta de forma segura</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información y opciones -->
+                <div class="space-y-6">
+                    <div class="text-white text-opacity-80">
+                        <p class="mb-4">Gracias por usar RPGestor. Tu sesión ha sido cerrada de forma segura.</p>
+                        <p class="text-sm text-white text-opacity-60">Para acceder nuevamente al sistema, inicia sesión con tus credenciales.</p>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="space-y-3">
+                        <a href="{% url 'login' %}" 
+                           class="w-full bg-orange-400 hover:bg-orange-500 text-white py-3 px-4 rounded font-medium transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Iniciar Sesión Nuevamente
+                        </a>
+                        
+                        <button onclick="window.location.href='/'" 
+                                class="w-full bg-transparent border border-white border-opacity-40 text-white py-3 px-4 rounded font-medium hover:bg-white hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                            <i class="fas fa-home mr-2"></i>
+                            Ir al Inicio
+                        </button>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="pt-6 border-t border-white border-opacity-20">
+                        <div class="text-center">
+                            <p class="text-xs text-white text-opacity-60 mb-2">¿Necesitas ayuda?</p>
+                            <div class="flex justify-center space-x-4 text-xs text-white text-opacity-50">
+                                <a href="#" class="hover:text-white transition-colors">Soporte Técnico</a>
+                                <span>•</span>
+                                <a href="#" class="hover:text-white transition-colors">Contacto</a>
+                                <span>•</span>
+                                <a href="#" class="hover:text-white transition-colors">Ayuda</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts para gráficos de fondo -->
+    <script>
+        // Crear gráficos de fondo animados (mismo código que login)
+        function createBackgroundChart(canvasId, type, colors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: ['A', 'B', 'C', 'D'],
+                    datasets: [{
+                        data: [Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100],
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: type === 'line' ? {
+                        x: { display: false },
+                        y: { display: false }
+                    } : {}
+                }
+            });
+        }
+
+        // Inicializar gráficos de fondo
+        setTimeout(() => {
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart3', 'line', ['rgba(255,255,255,0.25)']);
+            createBackgroundChart('bgChart4', 'pie', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+        }, 100);
+
+        // Animar los gráficos de fondo
+        setInterval(() => {
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+        }, 5000);
+
+        // Redirección automática opcional (después de 10 segundos)
+        setTimeout(() => {
+            const autoRedirect = confirm('¿Quieres ser redirigido automáticamente a la página de login?');
+            if (autoRedirect) {
+                window.location.href = "{% url 'login' %}";
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

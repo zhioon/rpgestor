@@ -1,0 +1,314 @@
+{% extends 'base_unified.html' %}
+
+{% block title %}Historial de {{ producto.codigo }} - RPGestor{% endblock %}
+{% block page_title %}Historial de Stock{% endblock %}
+{% block page_subtitle %}{{ producto.codigo }} - {{ producto.nombre }}{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Menú específico para productos -->
+<a href="{% url 'productos:inventario_jefe' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-boxes mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Inventario General
+</a>
+
+<a href="{% url 'productos:movimientos_stock' producto.pk %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md bg-white bg-opacity-20 text-white">
+    <i class="fas fa-history mr-3"></i>
+    Historial de Stock
+</a>
+
+<a href="{% url 'usuarios:dashboard_redirect' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-tachometer-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Información del producto -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-500 to-blue-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-box text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{{ producto.nombre }}</h2>
+                        <p class="text-purple-100 text-sm">Código: {{ producto.codigo }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="bg-white bg-opacity-20 text-white px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-layer-group mr-1"></i>
+                        {{ producto.grupo.nombre }}
+                    </span>
+                    <span class="bg-white bg-opacity-20 text-white px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-cubes mr-1"></i>
+                        Stock: {{ producto.stock }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información adicional del producto -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-tags text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">SubGrupo</p>
+                        <p class="font-medium text-gray-900">{{ producto.subgrupo.nombre }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-cubes text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Stock Actual</p>
+                        <p class="font-medium {% if producto.stock > 10 %}text-green-600{% elif producto.stock > 0 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                            {{ producto.stock }} unidades
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-history text-purple-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Total Movimientos</p>
+                        <p class="font-medium text-gray-900">{{ movimientos|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de movimientos -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-list-alt text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Historial de Movimientos</h2>
+                        <p class="text-green-100 text-sm">Registro completo de entradas y salidas</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="window.print()" 
+                            class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
+                        <i class="fas fa-print mr-2"></i>
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de movimientos -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-calendar mr-1"></i>
+                            Fecha
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-exchange-alt mr-1"></i>
+                            Tipo de Movimiento
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sort-numeric-up mr-1"></i>
+                            Cantidad
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-user mr-1"></i>
+                            Responsable
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sticky-note mr-1"></i>
+                            Notas
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for m in movimientos %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-calendar text-gray-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ m.fecha|date:"d/m/Y" }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ m.fecha|date:"H:i" }} hrs
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if m.tipo == 'entrada' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    {{ m.get_tipo_display }}
+                                </span>
+                            {% elif m.tipo == 'salida' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    {{ m.get_tipo_display }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-sync mr-1"></i>
+                                    {{ m.get_tipo_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% if m.tipo == 'entrada' %}
+                                    <div class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                                    <span class="text-sm font-medium text-green-900">+{{ m.cantidad }}</span>
+                                {% elif m.tipo == 'salida' %}
+                                    <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
+                                    <span class="text-sm font-medium text-red-900">-{{ m.cantidad }}</span>
+                                {% else %}
+                                    <div class="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
+                                    <span class="text-sm font-medium text-blue-900">{{ m.cantidad }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if m.responsable %}
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-white text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ m.responsable.get_full_name|default:m.responsable.username }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            @{{ m.responsable.username }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-500 italic">
+                                    <i class="fas fa-minus mr-1"></i>
+                                    Sin asignar
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if m.notas %}
+                                <div class="text-sm text-gray-900 max-w-xs">
+                                    <div class="bg-gray-50 rounded-lg p-2 border-l-2 border-blue-400">
+                                        {{ m.notas }}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-400 italic">Sin notas</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-history text-gray-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Sin movimientos</h3>
+                                <p class="text-gray-500">Este producto no tiene movimientos registrados.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer con estadísticas -->
+        {% if movimientos %}
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Entradas</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Salidas</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Ajustes</span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Total: {{ movimientos|length }} movimientos
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Acciones -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'productos:inventario_jefe' %}" 
+           class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver al Inventario
+        </a>
+        
+        <div class="flex space-x-3">
+            <button onclick="window.print()" 
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                <i class="fas fa-print mr-2"></i>
+                Imprimir Historial
+            </button>
+            
+            <a href="{% url 'pedidos:crear_pedido' %}?producto={{ producto.pk }}" 
+               class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Crear Pedido
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para impresión */
+@media print {
+    .sidebar, .flex.items-center.justify-between:last-child {
+        display: none !important;
+    }
+    
+    .bg-gradient-to-r {
+        background: #3b82f6 !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .content-overlay {
+        background: white !important;
+    }
+    
+    .shadow-lg {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+}
+</style>
+{% endblock %}

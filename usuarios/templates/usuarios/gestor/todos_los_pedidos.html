@@ -1,0 +1,320 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Todos los Pedidos - RPGestor{% endblock %}
+{% block page_title %}Todos los Pedidos{% endblock %}
+{% block page_subtitle %}Gestión completa de pedidos con filtros avanzados{% endblock %}
+{% block user_role %}Gestor{% endblock %}
+{% block dashboard_url %}{% url 'usuarios:dashboard_gestor' %}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/gestor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Estadísticas rápidas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-list text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Pedidos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_pedidos }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Ventas</h3>
+                    <p class="text-2xl font-bold text-gray-900">${{ total_ventas|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-filter text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Filtros Activos</h3>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if filtros.vendedor or filtros.grupo or filtros.estado or filtros.fecha_inicio or filtros.fecha_fin or filtros.cliente %}
+                            {{ filtros|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-search mr-2"></i>Filtros de Búsqueda
+        </h3>
+        
+        <form method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Filtro por Vendedor -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vendedor</label>
+                    <select name="vendedor" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todos los vendedores</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}" {% if filtros.vendedor == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                            {{ vendedor.user.first_name }} {{ vendedor.user.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Filtro por Grupo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grupo de Productos</label>
+                    <select name="grupo" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todos los grupos</option>
+                        {% for grupo in grupos %}
+                        <option value="{{ grupo.id }}" {% if filtros.grupo == grupo.id|stringformat:"s" %}selected{% endif %}>
+                            {{ grupo.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Filtro por Estado -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select name="estado" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todos los estados</option>
+                        {% for estado_key, estado_label in estados %}
+                        <option value="{{ estado_key }}" {% if filtros.estado == estado_key %}selected{% endif %}>
+                            {{ estado_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Filtro por Cliente -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                    <input type="text" name="cliente" value="{{ filtros.cliente }}" 
+                           placeholder="Buscar por empresa, razón social o NIT"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Filtro por Fecha Inicio -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
+                    <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio }}"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Filtro por Fecha Fin -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Fin</label>
+                    <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin }}"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="flex space-x-4">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-search mr-2"></i>Filtrar
+                </button>
+                <a href="{% url 'usuarios:todos_los_pedidos' %}" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de pedidos -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+                Lista de Pedidos
+                {% if page_obj.paginator.count %}
+                    ({{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }})
+                {% endif %}
+            </h3>
+        </div>
+        
+        {% if page_obj %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pedido in page_obj %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-8 h-8">
+                                    {% if pedido.estado == 'F' %}
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check text-green-600 text-sm"></i>
+                                    </div>
+                                    {% elif pedido.estado == 'E' %}
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-paper-plane text-blue-600 text-sm"></i>
+                                    </div>
+                                    {% elif pedido.estado == 'B' %}
+                                    <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-edit text-yellow-600 text-sm"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-file-alt text-gray-600 text-sm"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">#{{ pedido.pk }}</div>
+                                    <div class="text-sm text-gray-500">{{ pedido.created_at|timesince }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ pedido.cliente.data.Empresa|default:pedido.cliente.data.Razon_Comercial|default:"Sin nombre"|truncatechars:30 }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                NIT: {{ pedido.cliente.data.Nit|default:"N/A" }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ pedido.vendedor.user.first_name }} {{ pedido.vendedor.user.last_name }}
+                            </div>
+                            <div class="text-sm text-gray-500">@{{ pedido.vendedor.user.username }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ pedido.fecha|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if pedido.estado == 'F' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Finalizado
+                            </span>
+                            {% elif pedido.estado == 'E' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Enviado
+                            </span>
+                            {% elif pedido.estado == 'B' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Borrador
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ pedido.get_estado_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${{ pedido.total|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" 
+                               class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-eye mr-1"></i>Ver
+                            </a>
+                            {% if pedido.estado == 'E' %}
+                            <a href="{% url 'pedidos:descargar_csv' pedido.pk %}" 
+                               class="text-green-600 hover:text-green-900">
+                                <i class="fas fa-download mr-1"></i>CSV
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Anterior
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Siguiente
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Mostrando <span class="font-medium">{{ page_obj.start_index }}</span> a <span class="font-medium">{{ page_obj.end_index }}</span> de <span class="font-medium">{{ page_obj.paginator.count }}</span> resultados
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            {{ num }}
+                        </span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron pedidos</h3>
+            <p class="text-gray-500">Intenta ajustar los filtros de búsqueda</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

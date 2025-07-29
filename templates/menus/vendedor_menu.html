@@ -1,0 +1,101 @@
+<!-- Menú específico para Vendedor -->
+<div class="space-y-1">
+    <!-- Dashboard -->
+    <a href="{% url 'usuarios:dashboard_vendedor' %}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'dashboard_vendedor' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200">
+        <i class="fas fa-tachometer-alt mr-3 text-white {% if request.resolver_match.url_name == 'dashboard_vendedor' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+        Mi Dashboard
+    </a>
+
+    <!-- Sección de Pedidos -->
+    <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+        <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+            Gestión de Pedidos
+        </p>
+        
+        <a href="{% url 'pedidos:crear_pedido' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'crear_pedido' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200 mt-2">
+            <i class="fas fa-plus-circle mr-3 text-white {% if request.resolver_match.url_name == 'crear_pedido' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Nuevo Pedido
+        </a>
+        
+        <a href="{% url 'pedidos:mis_pedidos' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'mis_pedidos' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200">
+            <i class="fas fa-list mr-3 text-white {% if request.resolver_match.url_name == 'mis_pedidos' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Mis Pedidos
+        </a>
+    </div>
+
+    <!-- Sección de Clientes -->
+    <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+        <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+            Mis Clientes
+        </p>
+        
+        <a href="{% url 'clientes:lista_clientes' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'lista_clientes' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200 mt-2">
+            <i class="fas fa-users mr-3 text-white {% if request.resolver_match.url_name == 'lista_clientes' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Lista de Clientes
+        </a>
+        
+        <a href="{% url 'clientes:clientes_favoritos' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'clientes_favoritos' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200">
+            <i class="fas fa-star mr-3 text-white {% if request.resolver_match.url_name == 'clientes_favoritos' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Clientes Favoritos
+        </a>
+    </div>
+
+    <!-- Sección de Productos e Inventario -->
+    <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+        <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+            Productos
+        </p>
+        
+        <a href="{% url 'productos:inventario_vendedor' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'inventario_vendedor' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200 mt-2">
+            <i class="fas fa-box mr-3 text-white {% if request.resolver_match.url_name == 'inventario_vendedor' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Mi Inventario
+        </a>
+    </div>
+
+
+
+    <!-- Sección de Herramientas -->
+    <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+        <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+            Herramientas
+        </p>
+        
+        <a href="{% url 'usuarios:calculadora_precios' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'calculadora_precios' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200 mt-2">
+            <i class="fas fa-calculator mr-3 text-white {% if request.resolver_match.url_name == 'calculadora_precios' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Calculadora de Precios
+        </a>
+        
+        <a href="{% url 'usuarios:mi_agenda' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'mi_agenda' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200">
+            <i class="fas fa-calendar-alt mr-3 text-white {% if request.resolver_match.url_name == 'mi_agenda' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Mi Agenda
+            <!-- Indicador de eventos pendientes -->
+            <span id="agenda-badge" class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 hidden">0</span>
+        </a>
+    </div>
+
+    <!-- Sección de Comunicación -->
+    <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+        <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+            Comunicación
+        </p>
+        
+        <a href="{% url 'usuarios:inbox_mensajes' %}" 
+           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if request.resolver_match.url_name == 'inbox_mensajes' or request.resolver_match.url_name == 'detalle_mensaje' %}bg-white bg-opacity-20 text-white{% else %}text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white{% endif %} transition-all duration-200 mt-2">
+            <i class="fas fa-inbox mr-3 text-white {% if request.resolver_match.url_name == 'inbox_mensajes' or request.resolver_match.url_name == 'detalle_mensaje' %}text-opacity-100{% else %}text-opacity-70 group-hover:text-white{% endif %}"></i>
+            Bandeja de Entrada
+            <!-- Indicador de mensajes no leídos -->
+            <span id="mensajes-badge" class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 hidden">0</span>
+        </a>
+        
+        
+    </div>
+</div>
+

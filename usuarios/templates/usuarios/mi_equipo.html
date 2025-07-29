@@ -1,0 +1,470 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Mi Equipo - RPGestor{% endblock %}
+
+{% block page_title %}Mi Equipo{% endblock %}
+{% block page_subtitle %}Gestión completa de vendedores{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Estadísticas Generales del Equipo -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Total Vendedores -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Vendedores</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_vendedores }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores Activos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-user-check text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Activos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_activos }}</p>
+                    <p class="text-sm text-green-600">Últimos 3 días</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Necesitan Atención -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 mr-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Necesitan Atención</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_necesitan_atencion }}</p>
+                    <p class="text-sm text-red-600">Bajo rendimiento</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta del Equipo -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-target text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Meta del Equipo</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ porcentaje_meta_equipo|floatformat:1 }}%</p>
+                    <p class="text-sm text-purple-600">${{ ventas_totales_equipo|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold text-gray-900">Filtrar Vendedores</h2>
+            
+            <div class="flex flex-wrap gap-4">
+                <!-- Filtro por Estado -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Estado:</label>
+                    <select id="filtro-estado" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos</option>
+                        <option value="activos" {% if filtro_estado == 'activos' %}selected{% endif %}>Activos</option>
+                        <option value="inactivos" {% if filtro_estado == 'inactivos' %}selected{% endif %}>Inactivos</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Rendimiento -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Rendimiento:</label>
+                    <select id="filtro-rendimiento" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="todos" {% if filtro_rendimiento == 'todos' %}selected{% endif %}>Todos</option>
+                        <option value="alto" {% if filtro_rendimiento == 'alto' %}selected{% endif %}>Alto (≥80%)</option>
+                        <option value="bajo" {% if filtro_rendimiento == 'bajo' %}selected{% endif %}>Bajo (<50%)</option>
+                    </select>
+                </div>
+
+                <button onclick="aplicarFiltros()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-filter mr-2"></i>Aplicar Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Vendedores -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Equipo de Vendedores</h2>
+            <p class="text-sm text-gray-600 mt-1">{{ vendedores_info|length }} vendedor{{ vendedores_info|length|pluralize:"es" }} mostrado{{ vendedores_info|length|pluralize:"s" }}</p>
+        </div>
+
+        {% if vendedores_info %}
+        <div class="divide-y divide-gray-200">
+            {% for vendedor_data in vendedores_info %}
+            <div class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between">
+                    <!-- Información del Vendedor -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Foto de Perfil -->
+                        <div class="flex-shrink-0">
+                            {% if vendedor_data.profile.get_profile_picture_url %}
+                                <img src="{{ vendedor_data.profile.get_profile_picture_url }}" 
+                                     alt="Foto de {{ vendedor_data.user.get_full_name }}" 
+                                     class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                            {% else %}
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                    <span class="text-white text-lg font-bold">
+                                        {{ vendedor_data.user.first_name.0|default:vendedor_data.user.username.0|upper }}{{ vendedor_data.user.last_name.0|upper }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Datos Básicos -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3">
+                                <h3 class="text-lg font-semibold text-gray-900 truncate">
+                                    {{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}
+                                </h3>
+                                
+                                <!-- Estado de Actividad -->
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ vendedor_data.estado_bg }} {{ vendedor_data.estado_color }}">
+                                    <span class="w-2 h-2 rounded-full mr-1.5 
+                                        {% if vendedor_data.estado_actividad == 'activo_hoy' %}bg-green-400 animate-pulse
+                                        {% elif vendedor_data.estado_actividad == 'activo_reciente' %}bg-blue-400
+                                        {% elif vendedor_data.estado_actividad == 'inactivo_reciente' %}bg-yellow-400
+                                        {% else %}bg-red-400{% endif %}">
+                                    </span>
+                                    {{ vendedor_data.estado_texto }}
+                                </span>
+
+                                <!-- Alerta si necesita atención -->
+                                {% if vendedor_data.necesita_atencion %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Atención
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                                <span>
+                                    <i class="fas fa-envelope mr-1"></i>
+                                    {{ vendedor_data.user.email|default:"Sin email" }}
+                                </span>
+                                {% if vendedor_data.profile.phone %}
+                                <span>
+                                    <i class="fas fa-phone mr-1"></i>
+                                    {{ vendedor_data.profile.phone }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas de Rendimiento -->
+                    <div class="flex items-center space-x-8">
+                        <!-- Ventas del Mes -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">
+                                ${{ vendedor_data.ventas_mes|floatformat:0|intcomma }}
+                            </div>
+                            <div class="text-xs text-gray-500">Ventas del mes</div>
+                            <div class="text-xs text-gray-400">{{ vendedor_data.pedidos_mes }} pedidos</div>
+                        </div>
+
+                        <!-- Meta -->
+                        <div class="text-center">
+                            <div class="text-lg font-bold 
+                                {% if vendedor_data.porcentaje_meta >= 100 %}text-green-600
+                                {% elif vendedor_data.porcentaje_meta >= 80 %}text-blue-600
+                                {% elif vendedor_data.porcentaje_meta >= 50 %}text-yellow-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ vendedor_data.porcentaje_meta|floatformat:1 }}%
+                            </div>
+                            <div class="text-xs text-gray-500">Meta cumplida</div>
+                            <div class="text-xs text-gray-400">${{ vendedor_data.presupuesto_efectivo|floatformat:0|intcomma }}</div>
+                        </div>
+
+                        <!-- Clientes -->
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-purple-600">
+                                {{ vendedor_data.clientes_mes }}
+                            </div>
+                            <div class="text-xs text-gray-500">Clientes</div>
+                            <div class="text-xs text-gray-400">Este mes</div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="flex items-center space-x-2">
+                            <!-- Botón Ver Detalle -->
+                            <a href="{% url 'usuarios:detalle_vendedor' vendedor_data.vendedor.id %}" 
+                               class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>Ver Detalle
+                            </a>
+
+                            <!-- Botón Enviar Mensaje -->
+                            <button onclick="abrirModalMensaje({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}')" 
+                                    class="bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700 transition-colors">
+                                <i class="fas fa-envelope mr-1"></i>Mensaje
+                                {% if vendedor_data.mensajes_no_leidos > 0 %}
+                                <span class="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                    {{ vendedor_data.mensajes_no_leidos }}
+                                </span>
+                                {% endif %}
+                            </button>
+
+                            <!-- Menú de Acciones -->
+                            <div class="relative">
+                                <button onclick="toggleMenu('menu-{{ vendedor_data.vendedor.id }}')" 
+                                        class="bg-gray-600 text-white px-3 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                
+                                <div id="menu-{{ vendedor_data.vendedor.id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-50">
+                                    <a href="#" onclick="abrirModalMeta({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}')" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-bullseye mr-2"></i>Asignar Meta
+                                    </a>
+                                    <a href="#" onclick="abrirModalSeguimiento({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}')" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-clipboard-check mr-2"></i>Crear Seguimiento
+                                    </a>
+                                    {% if vendedor_data.profile.phone %}
+                                    <a href="tel:{{ vendedor_data.profile.phone }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                                        <i class="fas fa-phone mr-2"></i>Llamar
+                                    </a>
+                                    {% endif %}
+                                    {% if vendedor_data.user.email %}
+                                    <a href="mailto:{{ vendedor_data.user.email }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <i class="fas fa-envelope mr-2"></i>Email
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información Adicional (Expandible) -->
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Ventas semana:</span>
+                            <span class="font-medium text-gray-900 ml-2">${{ vendedor_data.ventas_semana|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Promedio/pedido:</span>
+                            <span class="font-medium text-gray-900 ml-2">${{ vendedor_data.promedio_pedido|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Metas activas:</span>
+                            <span class="font-medium text-gray-900 ml-2">{{ vendedor_data.metas_activas }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Último pedido:</span>
+                            <span class="font-medium text-gray-900 ml-2">
+                                {% if vendedor_data.ultimo_pedido %}
+                                    {{ vendedor_data.ultimo_pedido.fecha|timesince }} ago
+                                {% else %}
+                                    Nunca
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay vendedores</h3>
+            <p class="text-gray-500">No se encontraron vendedores con los filtros aplicados.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para Enviar Mensaje -->
+<div id="modal-mensaje" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Enviar Mensaje</h3>
+            <form id="form-mensaje">
+                <input type="hidden" id="mensaje-vendedor-id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Para:</label>
+                    <input type="text" id="mensaje-vendedor-nombre" readonly 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo:</label>
+                    <select id="mensaje-tipo" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="M">Motivacional</option>
+                        <option value="A">Alerta</option>
+                        <option value="F">Felicitación</option>
+                        <option value="R">Recordatorio</option>
+                        <option value="RE">Reunión</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad:</label>
+                    <select id="mensaje-prioridad" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="B">Baja</option>
+                        <option value="M" selected>Media</option>
+                        <option value="A">Alta</option>
+                        <option value="U">Urgente</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asunto:</label>
+                    <input type="text" id="mensaje-asunto" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje:</label>
+                    <textarea id="mensaje-contenido" rows="4" required 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalMensaje()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Enviar Mensaje
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para aplicar filtros
+function aplicarFiltros() {
+    const estado = document.getElementById('filtro-estado').value;
+    const rendimiento = document.getElementById('filtro-rendimiento').value;
+    
+    const params = new URLSearchParams();
+    if (estado !== 'todos') params.append('estado', estado);
+    if (rendimiento !== 'todos') params.append('rendimiento', rendimiento);
+    
+    window.location.href = '?' + params.toString();
+}
+
+// Función para toggle de menús
+function toggleMenu(menuId) {
+    // Cerrar todos los menús
+    document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+        if (menu.id !== menuId) {
+            menu.classList.add('hidden');
+        }
+    });
+    
+    // Toggle el menú seleccionado
+    const menu = document.getElementById(menuId);
+    menu.classList.toggle('hidden');
+}
+
+// Cerrar menús al hacer click fuera
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[onclick*="toggleMenu"]') && !event.target.closest('[id^="menu-"]')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+
+// Funciones para modales
+function abrirModalMensaje(vendedorId, vendedorNombre) {
+    document.getElementById('mensaje-vendedor-id').value = vendedorId;
+    document.getElementById('mensaje-vendedor-nombre').value = vendedorNombre;
+    document.getElementById('modal-mensaje').classList.remove('hidden');
+}
+
+function cerrarModalMensaje() {
+    document.getElementById('modal-mensaje').classList.add('hidden');
+    document.getElementById('form-mensaje').reset();
+}
+
+// Enviar mensaje
+document.getElementById('form-mensaje').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        vendedor_id: document.getElementById('mensaje-vendedor-id').value,
+        tipo: document.getElementById('mensaje-tipo').value,
+        prioridad: document.getElementById('mensaje-prioridad').value,
+        asunto: document.getElementById('mensaje-asunto').value,
+        mensaje: document.getElementById('mensaje-contenido').value
+    };
+    
+    fetch('{% url "usuarios:enviar_mensaje_vendedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mensaje enviado correctamente');
+            cerrarModalMensaje();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar el mensaje');
+    });
+});
+
+// Función para obtener cookie CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Placeholder functions para otras funcionalidades
+function abrirModalMeta(vendedorId, vendedorNombre) {
+    alert('Funcionalidad de asignar meta en desarrollo para: ' + vendedorNombre);
+}
+
+function abrirModalSeguimiento(vendedorId, vendedorNombre) {
+    alert('Funcionalidad de seguimiento en desarrollo para: ' + vendedorNombre);
+}
+</script>
+{% endblock %}

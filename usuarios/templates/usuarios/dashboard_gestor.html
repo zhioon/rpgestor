@@ -1,0 +1,400 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard de Gestión - RPGestor{% endblock %}
+{% block page_title %}Dashboard de Gestión{% endblock %}
+{% block page_subtitle %}Panel de control empresarial{% endblock %}
+{% block user_role %}Gestor{% endblock %}
+{% block dashboard_url %}{% url 'usuarios:dashboard_gestor' %}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/gestor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header con saludo personalizado -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">
+                    ¡Bienvenido, {{ user.get_full_name|default:user.username }}!
+                </h1>
+                <p class="text-blue-100">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    {{ fecha_actual|date:"l, d \d\e F \d\e Y" }}
+                </p>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold">{{ hora_actual|time:"H:i" }}</div>
+                <div class="text-blue-200 text-sm">Hora actual</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de estadísticas principales mejoradas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Ventas del Mes -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Ventas del Mes</p>
+                    <p class="text-3xl font-bold text-green-600 mt-2">
+                        ${{ ventas_totales_mes|floatformat:0|intcomma }}
+                    </p>
+                    <div class="flex items-center mt-2">
+                        <i class="fas {% if crecimiento_ventas >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %} {% if crecimiento_ventas >= 0 %}text-green-500{% else %}text-red-500{% endif %} text-sm mr-1"></i>
+                        <span class="text-sm {% if crecimiento_ventas >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">{{ crecimiento_ventas|floatformat:1 }}% vs mes anterior</span>
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- Pedidos del Mes -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Pedidos del Mes</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-2">{{ pedidos_totales_mes }}</p>
+                    <div class="flex items-center mt-2">
+                        <i class="fas fa-shopping-cart text-blue-500 text-sm mr-1"></i>
+                        <span class="text-sm text-blue-600 font-medium">{{ pedidos_pendientes }} pendientes</span>
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shopping-bag text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores Activos -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Vendedores</p>
+                    <p class="text-3xl font-bold text-purple-600 mt-2">{{ vendedores_activos }}</p>
+                    <div class="flex items-center mt-2">
+                        <i class="fas fa-user-check text-purple-500 text-sm mr-1"></i>
+                        <span class="text-sm text-purple-600 font-medium">{{ vendedores_activos_hoy }} activos hoy</span>
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-purple-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de gráficos y estadísticas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Ranking de Vendedores Mejorado -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+                    Top Vendedores del Mes
+                </h3>
+                <a href="{% url 'usuarios:todos_los_pedidos' %}" 
+                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Ver todos <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            
+            {% if ranking_vendedores %}
+                <div class="space-y-4">
+                    {% for vendedor in ranking_vendedores %}
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-shrink-0 mr-4">
+                            {% if forloop.counter == 1 %}
+                                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-crown text-yellow-600"></i>
+                                </div>
+                            {% elif forloop.counter == 2 %}
+                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-medal text-gray-600"></i>
+                                </div>
+                            {% elif forloop.counter == 3 %}
+                                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-award text-orange-600"></i>
+                                </div>
+                            {% else %}
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-bold">{{ forloop.counter }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900">
+                                {% if vendedor.vendedor__user__first_name or vendedor.vendedor__user__last_name %}
+                                    {{ vendedor.vendedor__user__first_name }} {{ vendedor.vendedor__user__last_name }}
+                                {% elif vendedor.vendedor__user__username %}
+                                    {{ vendedor.vendedor__user__username }}
+                                {% else %}
+                                    Vendedor Desconocido
+                                {% endif %}
+                            </h4>
+                            <div class="flex items-center mt-1">
+                                <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
+                                    <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                                         style="width: {{ vendedor.porcentaje_cumplimiento }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-600">{{ vendedor.porcentaje_cumplimiento|floatformat:1 }}%</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-green-600">
+                                ${{ vendedor.total_ventas|floatformat:0|intcomma }}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ vendedor.pedidos_count }} pedidos</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-line text-gray-300 text-4xl mb-4"></i>
+                    <p class="text-gray-500">No hay datos de vendedores disponibles</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Actividad Reciente -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-clock text-blue-500 mr-2"></i>
+                    Actividad Reciente
+                </h3>
+                <a href="{% url 'usuarios:todos_los_pedidos' %}" 
+                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Ver todo <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Pedidos Recientes -->
+                {% if pedidos_recientes %}
+                    {% for pedido in pedidos_recientes %}
+                    <div class="flex items-center p-3 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-shopping-cart text-blue-600 text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">
+                                Nuevo pedido de {{ pedido.cliente.data.Empresa|default:"Cliente" }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                Por {% if pedido.vendedor.user %}{{ pedido.vendedor.user.get_full_name|default:pedido.vendedor.user.username }}{% else %}Usuario Desconocido{% endif %} • 
+                                {{ pedido.created_at|timesince }} ago
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-green-600">
+                                ${{ pedido.total|floatformat:0|intcomma }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Reuniones Próximas -->
+                {% if reuniones_proximas %}
+                    {% for reunion in reuniones_proximas %}
+                    <div class="flex items-center p-3 border-l-4 border-purple-500 bg-purple-50 rounded-r-lg">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-calendar text-purple-600 text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">{{ reunion.titulo }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ reunion.fecha_inicio|date:"d/m/Y H:i" }} • 
+                                Con {{ reunion.vendedor.user.get_full_name|default:reunion.vendedor.user.username }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Mensajes No Leídos -->
+                {% if mensajes_no_leidos %}
+                    {% for mensaje in mensajes_no_leidos %}
+                    <div class="flex items-center p-3 border-l-4 border-green-500 bg-green-50 rounded-r-lg">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-envelope text-green-600 text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">{{ mensaje.subject }}</p>
+                            <p class="text-xs text-gray-500">
+                                De {{ mensaje.sender.get_full_name|default:mensaje.sender.username }} • 
+                                {{ mensaje.timestamp|timesince }} ago
+                            </p>
+                        </div>
+                        <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if not pedidos_recientes and not reuniones_proximas and not mensajes_no_leidos %}
+                <div class="text-center py-8">
+                    <i class="fas fa-bell-slash text-gray-300 text-4xl mb-4"></i>
+                    <p class="text-gray-500">No hay actividad reciente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">
+            <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+            Acciones Rápidas
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="{% url 'usuarios:crear_reunion' %}" 
+               class="flex items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105">
+                <i class="fas fa-users text-2xl mr-3"></i>
+                <div>
+                    <div class="font-semibold">Crear Reunión</div>
+                    <div class="text-sm text-blue-100">Con vendedores</div>
+                </div>
+            </a>
+
+            <a href="{% url 'usuarios:agendar_cita' %}" 
+               class="flex items-center p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105">
+                <i class="fas fa-calendar-plus text-2xl mr-3"></i>
+                <div>
+                    <div class="font-semibold">Agendar Cita</div>
+                    <div class="text-sm text-green-100">Individual</div>
+                </div>
+            </a>
+
+            <a href="{% url 'notificaciones:enviar' %}" 
+               class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105">
+                <i class="fas fa-paper-plane text-2xl mr-3"></i>
+                <div>
+                    <div class="font-semibold">Enviar Mensaje</div>
+                    <div class="text-sm text-purple-100">A vendedores</div>
+                </div>
+            </a>
+
+            <a href="{% url 'usuarios:todos_los_pedidos' %}" 
+               class="flex items-center p-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105">
+                <i class="fas fa-chart-bar text-2xl mr-3"></i>
+                <div>
+                    <div class="font-semibold">Ver Reportes</div>
+                    <div class="text-sm text-orange-100">Y estadísticas</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertas y Notificaciones -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Alertas del Sistema -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+                Alertas del Sistema
+            </h3>
+            
+            <div class="space-y-3">
+                {% if vendedores_bajo_meta %}
+                <div class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <i class="fas fa-arrow-down text-red-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-red-800">
+                            {{ vendedores_bajo_meta }} vendedor{{ vendedores_bajo_meta|pluralize:"es" }} bajo meta
+                        </p>
+                        <p class="text-xs text-red-600">Requiere atención inmediata</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if productos_bajo_stock %}
+                <div class="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <i class="fas fa-boxes text-yellow-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-yellow-800">
+                            {{ productos_bajo_stock }} producto{{ productos_bajo_stock|pluralize:"s" }} con stock bajo
+                        </p>
+                        <p class="text-xs text-yellow-600">Revisar inventario</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if pedidos_pendientes %}
+                <div class="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <i class="fas fa-clock text-blue-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-blue-800">
+                            {{ pedidos_pendientes }} pedido{{ pedidos_pendientes|pluralize:"s" }} pendiente{{ pedidos_pendientes|pluralize:"s" }}
+                        </p>
+                        <p class="text-xs text-blue-600">Revisar estado</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if not vendedores_bajo_meta and not productos_bajo_stock and not pedidos_pendientes %}
+                <div class="text-center py-6">
+                    <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                    <p class="text-green-600 font-medium">Todo funcionando correctamente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Resumen Mensual -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>
+                Resumen del Mes
+            </h3>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Días transcurridos</span>
+                    <span class="text-sm font-bold text-gray-900">{{ dias_transcurridos }}/{{ dias_mes }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Promedio ventas/día</span>
+                    <span class="text-sm font-bold text-green-600">
+                        ${{ promedio_ventas_dia|floatformat:0|intcomma }}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Mejor vendedor</span>
+                    <span class="text-sm font-bold text-purple-600">
+                        {% if mejor_vendedor %}
+                            {% if mejor_vendedor.vendedor__user__first_name or mejor_vendedor.vendedor__user__last_name %}
+                                {{ mejor_vendedor.vendedor__user__first_name }} {{ mejor_vendedor.vendedor__user__last_name }}
+                            {% elif mejor_vendedor.vendedor__user__username %}
+                                {{ mejor_vendedor.vendedor__user__username }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Crecimiento vs mes anterior</span>
+                    <span class="text-sm font-bold {% if crecimiento_ventas >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        <i class="fas {% if crecimiento_ventas >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %} mr-1"></i>{{ crecimiento_ventas|floatformat:1 }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1385 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RPGestor - Dashboard{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        },
+                        rpgestor: {
+                            purple: '#667eea',
+                            blue: '#764ba2'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .sidebar-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-container-sidebar {
+            position: absolute;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .sidebar-content {
+            position: relative;
+            z-index: 10;
+        }
+        
+        .main-content-bg {
+            background-color: #ffffff;
+            position: relative;
+            z-index: 100;
+        }
+        
+        /* Asegurar que el contenido principal esté siempre visible */
+        .flex-1 {
+            position: relative;
+            z-index: 101;
+        }
+        
+        header {
+            position: relative;
+            z-index: 102;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+        }
+        
+        main {
+            background: #ffffff;
+            position: relative;
+            z-index: 103;
+        }
+        
+        /* Estilos específicos para dropdowns - TES */
+        #notifications-dropdown {
+            position: absolute !important;
+            z-index: 99999 !important
+            background: #ffffff !important;
+            border: 2px solid #e5e7eb !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            border-radius: 0.75rem !important;
+         
+        }
+        
+        #user-menu {
+            position: absolute !impor
+            z-index: 99999 !important;
+            background: #ffffff !important;
+            border: 2px solid #e5e7eb !important;
+            box-shadow: 0 25px 50px -12px rgb
+         ant;
+        nt;
+        }
+        
+        /* Estilo para debug - AL */
+        .dropdown-debug {
+         t;
+        nt;
+            border: 4p;
+            opacity: 1 !importat;
+            display: block 
+        }
+        
+        /* Asegurar visibilidad de elementos inte*/
+        #notifications-dr
+            position: relative;
+            z-index: 100000;
+            color: inherit;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full main-content-bg">
+    <div class="flex h-full">
+        <!-- Sidebar con fondo hermoso -->
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 sidebar-gradient text-white transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
+            <!-- Gráficos de fondo del sidebar -->
+            <div class="chart-container-sidebar top-4 left-4 w-16 h-16 animate-float">
+                <canvas id="sidebarChart1"></canvas>
+            </div>
+            <div class="chart-container-sidebar top-20 right-4 w-12 h-12 animate-pulse-slow">
+                <canvas id="sidebarChart2"></canvas>
+            </div>
+            <div class="chart-container-sidebar bottom-32 left-6 w-14 h-14 animate-float" style="animation-delay: 2s;">
+                <canvas id="sidebarChart3"></canvas>
+            </div>
+            <div class="chart-container-sidebar bottom-16 right-6 w-10 h-10 animate-pulse-slow" style="animation-delay: 1s;">
+                <canvas id="sidebarChart4"></canvas>
+            </div>
+            
+            <!-- Contenido del sidebar -->
+            <div class="sidebar-content h-full flex flex-col">
+                <div class="flex items-center justify-center h-16 bg-black bg-opacity-20">
+                    <img src="{% static 'img/logo-rpgestor.png' %}" alt="RPGestor Logo" class="h-8 w-auto mr-2 opacity-90">
+                    <h1 class="text-white text-xl font-bold">RPGestor</h1>
+                </div>
+                
+                <nav class="mt-5 px-2 flex-1">
+                    <div class="space-y-1">
+                        <!-- Dashboard Principal -->
+                        <a href="{% block dashboard_url %}#{% endblock %}" 
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                            <i class="fas fa-tachometer-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                            Dashboard
+                        </a>
+                        
+                        {% block sidebar_menu %}
+                        <!-- Menú específico por rol se define en cada template -->
+                        {% endblock %}
+                        
+                        <!-- Sección común -->
+                        <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+                            <a href="{% url 'notificaciones:inbox' %}" 
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                                <i class="fas fa-bell mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                                Notificaciones
+                                <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">3</span>
+                            </a>
+                            
+                            <a href="{% url 'notificaciones:enviar' %}" 
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                                <i class="fas fa-envelope mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                                Mensajes
+                            </a>
+                            
+                            <a href="#" 
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                                <i class="fas fa-cog mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                                Configuración
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Usuario info en sidebar -->
+                <div class="p-4 bg-black bg-opacity-20 border-t border-white border-opacity-10">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-white">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs text-white text-opacity-70">{% block user_role %}Usuario{% endblock %}</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{% url 'logout' %}" class="text-white text-opacity-70 hover:text-white transition-colors">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlay para móvil -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden hidden"></div>
+        
+        <!-- Contenido principal -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="flex items-center justify-between px-4 py-3">
+                    <div class="flex items-center">
+                        <!-- Botón menú móvil -->
+                        <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        
+                        <div class="ml-4 lg:ml-0">
+                            <h1 class="text-2xl font-semibold text-gray-900">{% block page_title %}Dashboard{% endblock %}</h1>
+                            <p class="text-sm text-gray-600">{% block page_subtitle %}Bienvenido de vuelta{% endblock %}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notificaciones -->
+                        <div class="relative">
+                            <button id="notifications-button" class="relative text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span id="notification-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                            </button>
+                            
+                            <!-- Dropdown de notificaciones -->
+                            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto">
+                                <div class="px-4 py-2 border-b border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-sm font-medium text-gray-900">Notificaciones</h3>
+                                        <button id="mark-all-read" class="text-xs text-blue-600 hover:text-blue-800">
+                                            Marcar todas como leídas
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="notifications-list">
+                                    <div class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                                        <p class="text-sm">No tienes notificaciones</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Perfil usuario -->
+                        <div class="relative">
+                            <button id="user-menu-button" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                {% if user.profile.get_profile_picture_url %}
+                                    <img src="{{ user.profile.get_profile_picture_url }}" 
+                                         alt="Foto de perfil" 
+                                         class="w-8 h-8 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-8 h-8 bg-gradient-to-r from-rpgestor-purple to-rpgestor-blue rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">{{ user.profile.get_initials }}</span>
+                                    </div>
+                                {% endif %}
+                            </button>
+                            
+                            <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-50">
+                                <a href="{% url 'usuarios:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-user mr-2 text-blue-500"></i>Mi Perfil
+                                </a>
+                                <a href="{% url 'usuarios:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-cog mr-2 text-gray-500"></i>Configuración
+                                </a>
+                                <div class="border-t border-gray-100"></div>
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hov
+                                    <i class="fas fa-sign-out-alt mr-2 text-red-500"></i>ar Sesión
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Contenido principal -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="container mx-auto px-6 py-8">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        console.log('🚀 RPGestor Dashboard - Starting JavaScript...'
+        
+        // Esperar a que el DOM esté completamente cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM loaded - Initializing...');
+            
+            // Inicializar componentes
+            initializeDropdowns()
+            initializeSidebar();
+            
+            nal
+            setTimeout(initializeCharts, 1000);
+        });
+        
+        
+            console.log('🔧 Initializi
+            
+            // ===== MENÚ DE USUARIO =====
+            ');
+            const userMenu = document.getElementById('user-menu');
+            
+             });
+            
+            if (userMenuButton && userMenu) {
+                und');
+                
+                userMenuButton.addEvente) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    
+                    // Cerrar notificaciones
+                    const notificationsDropdown ;
+                    if (notificationsDropdown) {
+                        notificationsDropdown.classList.add('hidden');
+                     ug');
+                    }
+                    
+                    // Toggle menú de usuario
+                    
+                    userMenu.classList.toggle('hidden');
+                    
+                    if (isHidden) {
+                        user;
+                        console.log('🟢 USER MENU VISIBLE - Should sox!');
+                    } else {
+                     
+                   
+                
+                });
+                
+                // Cerrar al hacer click fuera
+                document.addEventListener('click', functie) {
+                    if (!userMenuButton.contains(e.target) && !userMrget)) {
+                     ;
+                   
+                    }
+                });
+            } else {
+                console.error('❌ USER MENU ELEMENTS NOT);
+            }
+            
+         NES =====
+        
+            const notificationsDropdodown');
+            
+            console.log('Notifications elements:', { button: });
+            
+            if (notificationsButton && notificationsDropdown) {
+                console.log('✅ Notifications elements found');
+                
+                notificationsButton.addEventListener('click', function(e) {
+            t();
+                    e.stopPropagation();
+                    console.log('🔥 NOTIFICATIONS CLICKED!');
+                   
+                    // Cerrar menú de usuario
+                    if (userMenu) {
+                        userMenu.classLidden');
+                        userMenu.classList.remove('dropdown-debug');
+                    }
+                    
+                    // Toggle notificaciones
+                    const isHidden 
+                    notificationsDropdown.classList.toggl);
+                    
+                    i
+                    
+                        console.log('🟢 NOTI
+                        loadNotifications();
+                    e {
+                        notificationsDropdown.classList.remove('dropdown-debug');
+                        console.log('🔴 NOTIFICATIONS HIDDEN');
+                    }
+                });
+                
+                // Cerrar al hacer click fuera
+                document.addEventListener('click', function(e) {
+                    irget)) {
+                   hidden');
+                
+                    }
+                });
+                
+                // Cargar contador inicial
+                loadNotificationCount();
+            } else {
+                con
+            }
+        }
+        
+        function
+            const si);
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('
+            
+            i
+         
+        ;
+                    sidebarOve
+                }
+                
+            
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+                
+                function handleResize() {
+            {
+                        sidebar.classList.remove('-translate-l');
+                        sidebarOverlay.cla);
+                    } else {
+                        sidebar.classList.add('-translate-x-fu;
+                  }
+                }
+                
+                window.addEventListener('resize', handleResize);
+                
+            }
+        }
+        
+        function initializeCharts() {
+            console.log('🔧 Initializing charts...');
+            const chartInstances = {};
+            
+            function createSidebarChart(canvasId, colors) {
+                try {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+
+                    if (Chart.getChart(canvas)) {
+                        Chart.getChart(canvas).destroy();
+                    }
+                    
+                    const ctx = canvas.getContext('2d');
+                    chartInstances[canvasId] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            datasets: [{
+                                data: [10, 20, 30, 40],
+                                backgroundColor: colors,
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: false
+                                },
+                                y: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error(`Error creating chart ${canvasId}:`, error);
+                }
+            }
+            
+            try {
+                createSidebarChart('sidebarChart1', ['#a855f7', '#d8b4fe', '#f3e8ff']);
+                createSidebarChart('sidebarChart2', ['#818cf8', '#c7d2fe', '#eef2ff']);
+                createSidebarChart('sidebarChart3', ['#f472b6', '#fbcfe8', '#fce7f3']);
+                createSidebarChart('sidebarChart4', ['#fb923c', '#fed7aa', '#fff7ed']);
+            } catch (error) {
+                console.error('Error initializing sidebar charts:', error);
+            }
+        }
+        
+        // ===== FUNCIONES DE NOTIFICACIONES =====
+        function () {
+            f/')
+            
+                .
+                    updateNotificationCount(data.total_unread);
+                    renderNotifications(data.notifications);
+                })
+                .catch(error => console.error('Error loading notifications:', error));
+        }
+        
+        functnt() {
+         
+        
+                .then(data => updateNotificationCo)
+                .catch(error => consol);
+        }
+        
+        function updateNotifica
+            const notificationCount = document.getElementById('t');
+            if (notificationCount) {
+                if 0) {
+                    notificationCt;
+                    notificationCount.classList.remove('hidden');
+                } e
+         
+        
+            }
+        }
+        
+        function renderNotifica{
+            const notificationsList = document.getElemenst');
+            if (!nn;
+            
+            if (notifications.length === 0) {
+                not `
+         
+        "></i>
+                        <p class="text-sm">No tiep>
+                    </div>
+                `;
+                return;
+            }
+            
+            const notifi
+                <div class="notification-item px-4 py-3 hover:
+                 " 
+             ">
+         
+        k-0">
+                            <div class="w-8 h-8 bg-bl">
+                                <i class="fas fa-envelope text-blue-600 text-sm"></i>
+                            </div>
+            
+                        <div class="ml-3 flex">
+                            <p class="text-sm fbject}</p>
+                            <p class="text-xs text-gray-500">De: ${no>
+                            <p class="text-xs text-gray-400 mt-1">${not
+                        </div>
+                        <d
+                  div>
+                       /div>
+             v>
+            div>
+            `).join('');
+            
+            notificationsList.innerHTML = notificaHTML;
+        }
+        
+        function openNotification(url, notification) {
+            fetch(`/usuarios/api/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFTok,
+                    'Content-Type': 'application/son',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) loadNotificationCount();
+            });
+            
+            window.locatiof = url;
+        }
+        
+        funcame) {
+            let cookieValue = null;
+         
+        ';');
+                for (let i = 0; i < cookies.length; i++)
+                    const cookie = cookies[i].trim();
+                    if (cookie. '=')) {
+                        co
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    
+    <script src="{% static 'js/dropdown-fix.js' %}"></script>
+</body>
+</html><!-- S
+cript de debug para dropdowns -->
+<script>
+console.log('🚀 DEBUG SCRIPT LOADED');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOM Ready - Testing dropdowns...');
+    
+    // Test user menu
+    const userButton = document.getElementById('user-menu-button');
+    const userMenu = document.getElementById('user-menu');
+    
+    console.log('User elements:', { button: userButton, menu: userMenu });
+    
+    if (userButton && userMenu) {
+        console.log('✅ User menu elements found');
+        
+        userButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 USER MENU CLICKED!');
+            
+            userMenu.classList.toggle('hidden');
+            
+            if (!userMenu.classList.contains('hidden')) {
+                userMenu.style.background = 'red';
+                userMenu.style.color = 'white';
+                userMenu.style.border = '4px solid yellow';
+                userMenu.style.zIndex = '99999';
+                userMenu.style.position = 'absolute';
+                userMenu.style.display = 'block';
+                console.log('🟢 USER MENU SHOULD BE RED NOW!');
+            } else {
+                console.log('🔴 USER MENU HIDDEN');
+            }
+        });
+    } else {
+        console.error('❌ USER MENU NOT FOUND!');
+    }
+    
+    // Test notifications
+    const notifButton = document.getElementById('notifications-button');
+    const notifMenu = document.getElementById('notifications-dropdown');
+    
+    console.log('Notification elements:', { button: notifButton, menu: notifMenu });
+    
+    if (notifButton && notifMenu) {
+        console.log('✅ Notifications elements found');
+        
+        notifButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 NOTIFICATIONS CLICKED!');
+            
+            notifMenu.classList.toggle('hidden');
+            
+            if (!notifMenu.classList.contains('hidden')) {
+                notifMenu.style.background = 'red';
+                notifMenu.style.color = 'white';
+                notifMenu.style.border = '4px solid yellow';
+                notifMenu.style.zIndex = '99999';
+                notifMenu.style.position = 'absolute';
+                notifMenu.style.display = 'block';
+                console.log('🟢 NOTIFICATIONS SHOULD BE RED NOW!');
+            } else {
+                console.log('🔴 NOTIFICATIONS HIDDEN');
+            }
+        });
+    } else {
+        console.error('❌ NOTIFICATIONS NOT FOUND!');
+    }
+});
+</script><s
+tyle>
+/* ESTILOS PARA ARREGLAR DROPDOWNS */
+#notifications-dropdown {
+    position: absolute !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 0.75rem !important;
+    min-width: 320px !important;
+    min-height: 100px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    right: 0 !important;
+    top: 100% !important;
+    margin-top: 0.5rem !important;
+}
+
+#notifications-dropdown:not(.hidden) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#user-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 0.75rem !important;
+    min-width: 200px !important;
+    min-height: 120px !important;
+    right: 0 !important;
+    top: 100% !important;
+    margin-top: 0.5rem !important;
+}
+
+#user-menu:not(.hidden) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Estilo para debug - TEMPORAL */
+.dropdown-debug {
+    background: #ff0000 !important;
+    color: #ffffff !important;
+    border: 4px solid #ffff00 !important;
+    opacity: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+    min-height: 100px !important;
+    min-width: 200px !important;
+}
+
+/* Asegurar visibilidad de elementos internos */
+#notifications-dropdown *, #user-menu * {
+    position: relative;
+    z-index: 100000;
+    color: inherit !important;
+}
+
+/* Forzar que los elementos internos sean visibles */
+#notifications-dropdown a, #user-menu a {
+    display: block !important;
+    padding: 0.5rem 1rem !important;
+    color: #374151 !important;
+    text-decoration: none !important;
+}
+
+#notifications-dropdown a:hover, #user-menu a:hover {
+    background-color: #f3f4f6 !important;
+}
+</style><
+style>
+/* SOLUCIÓN DEFINITIVA - FORZAR MENÚS POR ENCIMA DE TODO */
+#notifications-dropdown, #user-menu {
+    position: fixed !important;  /* FIXED en lugar de absolute */
+    z-index: 999999 !important;  /* Z-index súper alto */
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 0.75rem !important;
+    min-height: 100px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Posicionar correctamente cuando no están hidden */
+#notifications-dropdown:not(.hidden) {
+    position: fixed !important;
+    top: 60px !important;  /* Debajo del header */
+    right: 60px !important;  /* Desde la derecha */
+    min-width: 320px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+}
+
+#user-menu:not(.hidden) {
+    position: fixed !important;
+    top: 60px !important;  /* Debajo del header */
+    right: 20px !important;  /* Más cerca del borde */
+    min-width: 200px !important;
+    min-height: 120px !important;
+}
+
+/* Debug styles - MUY VISIBLES */
+.dropdown-debug {
+    background: #ff0000 !important;
+    color: #ffffff !important;
+    border: 5px solid #ffff00 !important;
+    position: fixed !important;
+    z-index: 9999999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 150px !important;
+    min-width: 250px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+}
+
+/* Asegurar que el contenido interno sea visible */
+#notifications-dropdown *, #user-menu * {
+    color: #000000 !important;
+    background: inherit !important;
+    position: relative !important;
+    z-index: 9999999 !important;
+}
+
+/* Enlaces del menú */
+#notifications-dropdown a, #user-menu a {
+    display: block !important;
+    padding: 12px 16px !important;
+    color: #374151 !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+}
+
+#notifications-dropdown a:hover, #user-menu a:hover {
+    background-color: #f3f4f6 !important;
+    color: #1f2937 !important;
+}
+
+/* Forzar que el header tenga z-index menor */
+header {
+    z-index: 100 !important;
+}
+
+/* Forzar que el main tenga z-index menor */
+main {
+    z-index: 50 !important;
+}
+</style><
+script>
+console.log('🔥 FORZANDO ESTILOS INLINE - SOLUCIÓN DEFINITIVA');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Aplicando estilos inline forzados...');
+    
+    // Obtener elementos
+    const userButton = document.getElementById('user-menu-button');
+    const userMenu = document.getElementById('user-menu');
+    const notifButton = document.getElementById('notifications-button');
+    const notifMenu = document.getElementById('notifications-dropdown');
+    
+    // Función para aplicar estilos inline forzados
+    function forceStyles(element, styles) {
+        if (!element) return;
+        Object.keys(styles).forEach(key => {
+            element.style.setProperty(key, styles[key], 'important');
+        });
+    }
+    
+    // MENÚ DE USUARIO
+    if (userButton && userMenu) {
+        console.log('🔧 Configurando menú de usuario...');
+        
+        userButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 USER MENU CLICKED - FORZANDO ESTILOS!');
+            
+            if (userMenu.classList.contains('hidden')) {
+                // MOSTRAR - Aplicar estilos inline forzados
+                userMenu.classList.remove('hidden');
+                
+                forceStyles(userMenu, {
+                    'position': 'fixed',
+                    'top': '70px',
+                    'right': '20px',
+                    'z-index': '999999',
+                    'background': '#ff0000',
+                    'color': '#ffffff',
+                    'border': '5px solid #ffff00',
+                    'border-radius': '10px',
+                    'min-width': '250px',
+                    'min-height': '150px',
+                    'display': 'block',
+                    'visibility': 'visible',
+                    'opacity': '1',
+                    'padding': '10px',
+                    'font-size': '16px',
+                    'font-weight': 'bold'
+                });
+                
+                console.log('🟢 USER MENU FORZADO A SER VISIBLE!');
+                console.log('Estilos aplicados:', userMenu.style.cssText);
+                
+            } else {
+                // OCULTAR
+                userMenu.classList.add('hidden');
+                forceStyles(userMenu, {
+                    'display': 'none'
+                });
+                console.log('🔴 USER MENU OCULTO');
+            }
+        });
+    }
+    
+    // NOTIFICACIONES
+    if (notifButton && notifMenu) {
+        console.log('🔧 Configurando notificaciones...');
+        
+        notifButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 NOTIFICATIONS CLICKED - FORZANDO ESTILOS!');
+            
+            if (notifMenu.classList.contains('hidden')) {
+                // MOSTRAR - Aplicar estilos inline forzados
+                notifMenu.classList.remove('hidden');
+                
+                forceStyles(notifMenu, {
+                    'position': 'fixed',
+                    'top': '70px',
+                    'right': '80px',
+                    'z-index': '999999',
+                    'background': '#ff0000',
+                    'color': '#ffffff',
+                    'border': '5px solid #ffff00',
+                    'border-radius': '10px',
+                    'min-width': '350px',
+                    'min-height': '200px',
+                    'max-height': '400px',
+                    'display': 'block',
+                    'visibility': 'visible',
+                    'opacity': '1',
+                    'padding': '10px',
+                    'font-size': '14px',
+                    'overflow-y': 'auto'
+                });
+                
+                console.log('🟢 NOTIFICATIONS FORZADAS A SER VISIBLES!');
+                console.log('Estilos aplicados:', notifMenu.style.cssText);
+                
+                // Cargar notificaciones
+                loadNotifications();
+                
+            } else {
+                // OCULTAR
+                notifMenu.classList.add('hidden');
+                forceStyles(notifMenu, {
+                    'display': 'none'
+                });
+                console.log('🔴 NOTIFICATIONS OCULTAS');
+            }
+        });
+    }
+    
+    // Cerrar menús al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (userMenu && !userButton.contains(e.target) && !userMenu.contains(e.target)) {
+            userMenu.classList.add('hidden');
+            forceStyles(userMenu, { 'display': 'none' });
+        }
+        
+        if (notifMenu && !notifButton.contains(e.target) && !notifMenu.contains(e.target)) {
+            notifMenu.classList.add('hidden');
+            forceStyles(notifMenu, { 'display': 'none' });
+        }
+    });
+});
+</script><
+!-- SCRIPT INDEPENDIENTE PARA ARREGLAR DROPDOWNS -->
+<script src="{% static 'js/dropdown-fix.js' %}"></script><!--
+ SCRIPT FINAL PARA DROPDOWNS - VERSIÓN DEFINITIVA -->
+<script>
+console.log('🚀 SCRIPT FINAL CARGADO - VERSIÓN DEFINITIVA');
+
+// Ejecutar inmediatamente cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOM LISTO - CREANDO MENÚS DEFINITIVOS');
+    
+    setTimeout(function() {
+        createFinalDropdowns();
+    }, 2000); // Esperar 2 segundos para evitar conflictos
+});
+
+function createFinalDropdowns() {
+    console.log('🔧 CREANDO MENÚS FINALES...');
+    
+    // Obtener botones
+    const userButton = document.getElementById('user-menu-button');
+    const notifButton = document.getElementById('notifications-button');
+    
+    console.log('🔍 Botones encontrados:', {
+        userButton: !!userButton,
+        notifButton: !!notifButton
+    });
+    
+    // Variables para menús
+    let finalUserMenu = null;
+    let finalNotifMenu = null;
+    
+    // CREAR MENÚ DE USUARIO FINAL
+    if (userButton) {
+        console.log('👤 Creando menú de usuario final...');
+        
+        // Eliminar menús existentes si los hay
+        const existingUserMenu = document.getElementById('final-user-menu');
+        if (existingUserMenu) {
+            existingUserMenu.remove();
+        }
+        
+        // Crear menú completamente nuevo
+        finalUserMenu = document.createElement('div');
+        finalUserMenu.id = 'final-user-menu';
+        finalUserMenu.innerHTML = `
+            <div style="padding: 8px 0;">
+                <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; border-bottom: 1px solid #f3f4f6; font-size: 14px;">
+                    <i class="fas fa-user" style="margin-right: 8px; color: #3b82f6;"></i>Mi Perfil
+                </a>
+                <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; border-bottom: 1px solid #f3f4f6; font-size: 14px;">
+                    <i class="fas fa-cog" style="margin-right: 8px; color: #6b7280;"></i>Configuración
+                </a>
+                <a href="/accounts/logout/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; font-size: 14px;">
+                    <i class="fas fa-sign-out-alt" style="margin-right: 8px; color: #ef4444;"></i>Cerrar Sesión
+                </a>
+            </div>
+        `;
+        
+        // Aplicar estilos al menú
+        Object.assign(finalUserMenu.style, {
+            position: 'fixed',
+            top: '70px',
+            right: '20px',
+            zIndex: '2147483647',
+            background: '#ffffff',
+            border: '2px solid #e5e7eb',
+            borderRadius: '12px',
+            minWidth: '200px',
+            display: 'none',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+        });
+        
+        // Agregar efectos hover
+        const userLinks = finalUserMenu.querySelectorAll('a');
+        userLinks.forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f3f4f6';
+            });
+            link.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent';
+            });
+        });
+        
+        // Agregar al body
+        document.body.appendChild(finalUserMenu);
+        console.log('✅ Menú de usuario agregado al body');
+        
+        // Clonar botón para eliminar event listeners existentes
+        const newUserButton = userButton.cloneNode(true);
+        userButton.parentNode.replaceChild(newUserButton, userButton);
+        
+        // Agregar event listener al nuevo botón
+        newUserButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN MENÚ DE USUARIO FINAL!');
+            
+            // Cerrar notificaciones
+            if (finalNotifMenu) {
+                finalNotifMenu.style.display = 'none';
+            }
+            
+            // Toggle menú de usuario
+            if (finalUserMenu.style.display === 'none' || finalUserMenu.style.display === '') {
+                finalUserMenu.style.display = 'block';
+                console.log('🟢 MENÚ DE USUARIO FINAL VISIBLE!');
+            } else {
+                finalUserMenu.style.display = 'none';
+                console.log('🔴 MENÚ DE USUARIO FINAL OCULTO');
+            }
+        });
+    }
+    
+    // CREAR MENÚ DE NOTIFICACIONES FINAL
+    if (notifButton) {
+        console.log('🔔 Creando menú de notificaciones final...');
+        
+        // Eliminar menús existentes si los hay
+        const existingNotifMenu = document.getElementById('final-notif-menu');
+        if (existingNotifMenu) {
+            existingNotifMenu.remove();
+        }
+        
+        // Crear menú completamente nuevo
+        finalNotifMenu = document.createElement('div');
+        finalNotifMenu.id = 'final-notif-menu';
+        finalNotifMenu.innerHTML = `
+            <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">Notificaciones</h3>
+            </div>
+            <div id="final-notifications-list" style="max-height: 300px; overflow-y: auto; padding: 8px 0;">
+                <div style="padding: 32px; text-align: center; color: #6b7280;">
+                    <i class="fas fa-bell-slash" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                    <p style="margin: 0; font-size: 14px;">Cargando notificaciones...</p>
+                </div>
+            </div>
+        `;
+        
+        // Aplicar estilos al menú
+        Object.assign(finalNotifMenu.style, {
+            position: 'fixed',
+            top: '70px',
+            right: '80px',
+            zIndex: '2147483647',
+            background: '#ffffff',
+            border: '2px solid #e5e7eb',
+            borderRadius: '12px',
+            minWidth: '320px',
+            maxHeight: '400px',
+            display: 'none',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+        });
+        
+        // Agregar al body
+        document.body.appendChild(finalNotifMenu);
+        console.log('✅ Menú de notificaciones agregado al body');
+        
+        // Clonar botón para eliminar event listeners existentes
+        const newNotifButton = notifButton.cloneNode(true);
+        notifButton.parentNode.replaceChild(newNotifButton, notifButton);
+        
+        // Agregar event listener al nuevo botón
+        newNotifButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN NOTIFICACIONES FINAL!');
+            
+            // Cerrar menú de usuario
+            if (finalUserMenu) {
+                finalUserMenu.style.display = 'none';
+            }
+            
+            // Toggle notificaciones
+            if (finalNotifMenu.style.display === 'none' || finalNotifMenu.style.display === '') {
+                finalNotifMenu.style.display = 'block';
+                console.log('🟢 NOTIFICACIONES FINALES VISIBLES!');
+                loadFinalNotifications();
+            } else {
+                finalNotifMenu.style.display = 'none';
+                console.log('🔴 NOTIFICACIONES FINALES OCULTAS');
+            }
+        });
+    }
+    
+    // Cerrar menús al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (finalUserMenu && 
+            !finalUserMenu.contains(e.target) && 
+            !document.getElementById('user-menu-button').contains(e.target)) {
+            finalUserMenu.style.display = 'none';
+        }
+        
+        if (finalNotifMenu && 
+            !finalNotifMenu.contains(e.target) && 
+            !document.getElementById('notifications-button').contains(e.target)) {
+            finalNotifMenu.style.display = 'none';
+        }
+    });
+    
+    console.log('🎯 MENÚS FINALES COMPLETAMENTE CONFIGURADOS!');
+}
+
+// Función para cargar notificaciones finales
+function loadFinalNotifications() {
+    console.log('📡 Cargando notificaciones finales...');
+    
+    fetch('/usuarios/api/notifications/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Notificaciones finales cargadas:', data);
+            renderFinalNotifications(data.notifications);
+        })
+        .catch(error => {
+            console.error('❌ Error cargando notificaciones finales:', error);
+            const container = document.getElementById('final-notifications-list');
+            if (container) {
+                container.innerHTML = `
+                    <div style="padding: 32px; text-align: center; color: #ef4444;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 14px;">Error cargando notificaciones</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+// Función para renderizar notificaciones finales
+function renderFinalNotifications(notifications) {
+    const container = document.getElementById('final-notifications-list');
+    if (!container) return;
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 32px; text-center; color: #6b7280;">
+                <i class="fas fa-bell-slash" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                <p style="margin: 0; font-size: 14px;">No tienes notificaciones</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const notificationsHTML = notifications.map(notification => `
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f3f4f6; cursor: pointer;" 
+             onmouseover="this.style.backgroundColor='#f9fafb'" 
+             onmouseout="this.style.backgroundColor='transparent'"
+             onclick="window.location.href='${notification.url}'">
+            <div style="display: flex; align-items: start;">
+                <div style="width: 32px; height: 32px; background: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <i class="fas fa-envelope" style="color: #3b82f6; font-size: 14px;"></i>
+                </div>
+                <div style="flex: 1;">
+                    <p style="margin: 0 0 4px 0; font-weight: 600; color: #111827; font-size: 14px;">${notification.subject}</p>
+                    <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px;">De: ${notification.sender}</p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">${notification.timestamp}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = notificationsHTML;
+}
+</script><!--
+ SOLUCIÓN RADICAL - DESHABILITAR SCRIPTS ANTERIORES Y CREAR NUEVO -->
+<script>
+// DESHABILITAR TODOS LOS SCRIPTS ANTERIORES
+console.log('🛑 DESHABILITANDO SCRIPTS ANTERIORES...');
+
+// Eliminar todos los event listeners existentes
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔥 SOLUCIÓN RADICAL ACTIVADA');
+    
+    setTimeout(function() {
+        // Encontrar y limpiar botones
+        const userBtn = document.getElementById('user-menu-button');
+        const notifBtn = document.getElementById('notifications-button');
+        
+        if (userBtn) {
+            // Clonar para eliminar todos los event listeners
+            const newUserBtn = userBtn.cloneNode(true);
+            userBtn.parentNode.replaceChild(newUserBtn, userBtn);
+            console.log('✅ Botón de usuario limpiado');
+        }
+        
+        if (notifBtn) {
+            // Clonar para eliminar todos los event listeners
+            const newNotifBtn = notifBtn.cloneNode(true);
+            notifBtn.parentNode.replaceChild(newNotifBtn, notifBtn);
+            console.log('✅ Botón de notificaciones limpiado');
+        }
+        
+        // Crear menús visibles inmediatamente para prueba
+        createVisibleMenus();
+        
+    }, 3000); // Esperar 3 segundos
+});
+
+function createVisibleMenus() {
+    console.log('🎯 CREANDO MENÚS VISIBLES PARA PRUEBA');
+    
+    // CREAR MENÚ DE USUARIO VISIBLE
+    const testUserMenu = document.createElement('div');
+    testUserMenu.id = 'test-user-menu';
+    testUserMenu.innerHTML = `
+        <div style="padding: 16px; background: #ff0000; color: white; font-weight: bold; text-align: center;">
+            MENÚ DE USUARIO - PRUEBA
+        </div>
+        <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; background: white;">
+            <i class="fas fa-user" style="margin-right: 8px; color: #3b82f6;"></i>Mi Perfil
+        </a>
+        <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; background: white;">
+            <i class="fas fa-cog" style="margin-right: 8px; color: #6b7280;"></i>Configuración
+        </a>
+        <a href="/accounts/logout/" style="display: block; padding: 12px 16px; color: #374151; text-decoration: none; background: white;">
+            <i class="fas fa-sign-out-alt" style="margin-right: 8px; color: #ef4444;"></i>Cerrar Sesión
+        </a>
+    `;
+    
+    // Estilos para que sea MUY visible
+    testUserMenu.style.cssText = `
+        position: fixed !important;
+        top: 70px !important;
+        right: 20px !important;
+        z-index: 2147483647 !important;
+        background: #ffffff !important;
+        border: 4px solid #ff0000 !important;
+        border-radius: 12px !important;
+        min-width: 250px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        box-shadow: 0 0 50px rgba(255, 0, 0, 0.5) !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 14px !important;
+    `;
+    
+    document.body.appendChild(testUserMenu);
+    console.log('🟢 MENÚ DE USUARIO DE PRUEBA CREADO - DEBERÍA SER VISIBLE');
+    
+    // CREAR MENÚ DE NOTIFICACIONES VISIBLE
+    const testNotifMenu = document.createElement('div');
+    testNotifMenu.id = 'test-notif-menu';
+    testNotifMenu.innerHTML = `
+        <div style="padding: 16px; background: #0000ff; color: white; font-weight: bold; text-align: center;">
+            NOTIFICACIONES - PRUEBA
+        </div>
+        <div style="padding: 16px; background: white; color: #374151;">
+            <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                <strong>Mensaje de prueba 1</strong><br>
+                <small>De: Admin - Hace 2 horas</small>
+            </div>
+            <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                <strong>Mensaje de prueba 2</strong><br>
+                <small>De: Sistema - Hace 1 día</small>
+            </div>
+        </div>
+    `;
+    
+    // Estilos para que sea MUY visible
+    testNotifMenu.style.cssText = `
+        position: fixed !important;
+        top: 70px !important;
+        right: 300px !important;
+        z-index: 2147483647 !important;
+        background: #ffffff !important;
+        border: 4px solid #0000ff !important;
+        border-radius: 12px !important;
+        min-width: 320px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        box-shadow: 0 0 50px rgba(0, 0, 255, 0.5) !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 14px !important;
+    `;
+    
+    document.body.appendChild(testNotifMenu);
+    console.log('🟢 MENÚ DE NOTIFICACIONES DE PRUEBA CREADO - DEBERÍA SER VISIBLE');
+    
+    // Agregar event listeners a los botones limpios
+    const cleanUserBtn = document.getElementById('user-menu-button');
+    const cleanNotifBtn = document.getElementById('notifications-button');
+    
+    if (cleanUserBtn) {
+        cleanUserBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN BOTÓN LIMPIO DE USUARIO!');
+            
+            if (testUserMenu.style.display === 'none') {
+                testUserMenu.style.display = 'block';
+                console.log('🟢 MENÚ DE USUARIO MOSTRADO');
+            } else {
+                testUserMenu.style.display = 'none';
+                console.log('🔴 MENÚ DE USUARIO OCULTO');
+            }
+        });
+        console.log('✅ Event listener agregado al botón de usuario limpio');
+    }
+    
+    if (cleanNotifBtn) {
+        cleanNotifBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN BOTÓN LIMPIO DE NOTIFICACIONES!');
+            
+            if (testNotifMenu.style.display === 'none') {
+                testNotifMenu.style.display = 'block';
+                console.log('🟢 NOTIFICACIONES MOSTRADAS');
+            } else {
+                testNotifMenu.style.display = 'none';
+                console.log('🔴 NOTIFICACIONES OCULTAS');
+            }
+        });
+        console.log('✅ Event listener agregado al botón de notificaciones limpio');
+    }
+    
+    console.log('🎯 MENÚS DE PRUEBA COMPLETAMENTE CONFIGURADOS');
+    console.log('📍 Deberías ver dos cuadros: uno ROJO (usuario) y uno AZUL (notificaciones)');
+}
+</script>

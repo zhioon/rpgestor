@@ -1,0 +1,1018 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RPGestor{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        },
+                        sidebar: {
+                            bg: '#1f2937',
+                            hover: '#374151'
+                        },
+                        rpgestor: {
+                            purple: '#667eea',
+                            blue: '#764ba2'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sidebar-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+            pointer-events: none;
+        }
+        
+        /* Gráficos de fondo general - SOLO en el fondo, muy atrás */
+        .chart-container {
+            position: fixed;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: -10;
+        }
+        
+        /* Gráficos del sidebar - dentro del sidebar solamente */
+        .chart-container-sidebar {
+            position: absolute;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .sidebar-content {
+            position: relative;
+            z-index: 10;
+        }
+        
+        .sidebar-decorative-lines {
+            position: absolute;
+            z-index: 2;
+        }
+        
+        /* Contenido principal - siempre encima */
+        .content-overlay {
+            position: relative;
+            z-index: 100;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 101;
+        }
+        
+        .main-content-bg {
+            background: #ffffff;
+            position: relative;
+            z-index: 102;
+        }
+        
+        /* Asegurar que el contenido principal esté siempre visible */
+        main {
+            background: #ffffff;
+            position: relative;
+            z-index: 103;
+        }
+        
+        /* Estilos específicos para dropdowns */
+        #notifications-dropdown {
+            position: absolute !important;
+            z-index: 9999 !important;
+            background: #ffffff !important;
+            border: 2px solid #e5e7eb !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+            border-radius: 0.5rem !important;
+        }
+        
+        #user-menu {
+            position: absolute !important;
+            z-index: 9999 !important;
+            background: #ffffff !important;
+            border: 2px solid #e5e7eb !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+            border-radius: 0.5rem !important;
+        }
+        
+        /* Asegurar que los elementos del dropdown sean visibles */
+        #notifications-dropdown * {
+            position: relative;
+            z-index: 10000;
+        }
+        
+        #user-menu * {
+            position: relative;
+            z-index: 10000;
+        }
+        
+        /* Estilo para debug - remover después */
+        .dropdown-debug {
+            background: red !important;
+            color: white !important;
+            border: 3px solid yellow !important;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full gradient-bg">
+    <!-- Gráficos de fondo animados (en toda la aplicación) -->
+    <div class="chart-container top-10 left-10 w-32 h-32 animate-float">
+        <canvas id="bgChart1"></canvas>
+    </div>
+    <div class="chart-container top-20 right-20 w-24 h-24 animate-pulse-slow">
+        <canvas id="bgChart2"></canvas>
+    </div>
+    <div class="chart-container bottom-20 left-20 w-28 h-28 animate-float" style="animation-delay: 2s;">
+        <canvas id="bgChart3"></canvas>
+    </div>
+    <div class="chart-container bottom-10 right-10 w-20 h-20 animate-pulse-slow" style="animation-delay: 1s;">
+        <canvas id="bgChart4"></canvas>
+    </div>
+    
+    <!-- Elementos decorativos flotantes -->
+    <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full opacity-10 animate-ping"></div>
+    <div class="absolute top-3/4 right-1/3 w-3 h-3 bg-blue-200 rounded-full opacity-15 animate-pulse"></div>
+    <div class="absolute top-1/2 left-1/6 w-1 h-1 bg-white rounded-full opacity-20 animate-bounce"></div>
+    
+    <div class="content-overlay h-full flex">
+        {% block layout %}
+        <!-- Layout por defecto con sidebar -->
+        <!-- Sidebar con fondo hermoso -->
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-[500] w-64 sidebar-gradient transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
+            <!-- Gráficos de fondo del sidebar -->
+            <div class="chart-container-sidebar top-4 left-4 w-16 h-16 animate-float">
+                <canvas id="sidebarChart1"></canvas>
+            </div>
+            <div class="chart-container-sidebar top-20 right-4 w-12 h-12 animate-pulse-slow">
+                <canvas id="sidebarChart2"></canvas>
+            </div>
+            <div class="chart-container-sidebar bottom-32 left-6 w-14 h-14 animate-float" style="animation-delay: 2s;">
+                <canvas id="sidebarChart3"></canvas>
+            </div>
+            <div class="chart-container-sidebar bottom-16 right-6 w-10 h-10 animate-pulse-slow" style="animation-delay: 1s;">
+                <canvas id="sidebarChart4"></canvas>
+            </div>
+            
+            <!-- Líneas decorativas blancas -->
+            <div class="sidebar-decorative-lines top-1/4 left-1/4 w-1 h-1 bg-white rounded-full opacity-30 animate-ping"></div>
+            <div class="sidebar-decorative-lines top-3/4 right-1/3 w-2 h-2 bg-white rounded-full opacity-20 animate-pulse"></div>
+            <div class="sidebar-decorative-lines top-1/2 left-1/6 w-1 h-1 bg-white rounded-full opacity-40 animate-bounce"></div>
+            <div class="sidebar-decorative-lines top-1/3 right-1/4 w-1 h-1 bg-white rounded-full opacity-25 animate-ping" style="animation-delay: 1.5s;"></div>
+            <div class="sidebar-decorative-lines bottom-1/3 left-1/3 w-2 h-2 bg-white rounded-full opacity-15 animate-pulse" style="animation-delay: 0.8s;"></div>
+            
+            <!-- Contenido del sidebar -->
+            <div class="sidebar-content h-full flex flex-col">
+                <div class="flex flex-col items-center justify-center h-20 bg-white bg-opacity-20 backdrop-blur-sm border-b border-white border-opacity-10">
+                    <img src="{% static 'img/logo-rpgestor.png' %}" alt="RPGestor Logo" class="h-12 w-auto mb-1">
+                    <h1 class="text-white text-xl font-bold">RPGestor</h1>
+                </div>
+                
+                <nav class="mt-5 px-2 flex-1">
+                    <div class="space-y-1">
+                        {% block sidebar_menu %}
+  {% if user.is_authenticated %}
+    {% if user.groups.all.0.name == 'JefeVentas' %}
+      {% include 'menus/jefe_ventas_menu.html' %}
+    {% elif user.groups.all.0.name == 'Vendedor' %}
+      {% include 'menus/vendedor_menu.html' %}
+    {% else %}
+      <!-- Menú por defecto para otros usuarios -->
+      <a href="{% url 'usuarios:dashboard_redirect' %}" 
+         class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+          <i class="fas fa-tachometer-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+          Dashboard
+      </a>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+                        
+                        <!-- Sección común -->
+                        <div class="pt-4 mt-4 border-t border-white border-opacity-20">
+                            <a href="{% url 'notificaciones:inbox' %}" 
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                                <i class="fas fa-bell mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                                Notificaciones
+                            </a>
+                            
+                            <a href="{% url 'notificaciones:enviar' %}" 
+                               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+                                <i class="fas fa-envelope mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+                                Mensajes
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Usuario info en sidebar -->
+                <div class="p-4 bg-black bg-opacity-30 backdrop-blur-sm border-t border-white border-opacity-10">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            {% if user.profile.get_profile_picture_url %}
+                                <img src="{{ user.profile.get_profile_picture_url }}" 
+                                     alt="Foto de perfil" 
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-white border-opacity-20">
+                            {% else %}
+                                <div class="w-10 h-10 bg-gradient-to-br from-white to-blue-100 rounded-full flex items-center justify-center shadow-lg">
+                                    <span class="text-blue-600 text-sm font-bold">{{ user.profile.get_initials|default:user.username.0|upper }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs text-white text-opacity-70 flex items-center">
+                                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                                {% block user_role %}Usuario{% endblock %}
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="relative group">
+                                <button class="text-white text-opacity-70 hover:text-white transition-all duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-10">
+                                    <i class="fas fa-ellipsis-v text-sm"></i>
+                                </button>
+                                <!-- Mini dropdown -->
+                                <div class="absolute bottom-full right-0 mb-2 w-32 bg-white rounded-lg shadow-xl border border-gray-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                    <a href="{% url 'usuarios:profile' %}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                        <i class="fas fa-user mr-2"></i>Perfil
+                                    </a>
+                                    <a href="{% url 'logout' %}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Salir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlay para móvil -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 z-[400] lg:hidden" style="display: none;"></div>
+        
+        <!-- Contenido principal -->
+        <div class="flex-1 flex flex-col overflow-hidden lg:ml-0">
+            <!-- Header -->
+            <header class="glass-card shadow-sm border-b border-white border-opacity-20">
+                <div class="flex items-center justify-between px-4 py-3">
+                    <div class="flex items-center">
+                        <!-- Botón menú móvil -->
+                        <button id="sidebar-toggle" class="text-gray-700 hover:text-gray-900 focus:outline-none focus:text-gray-900">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        
+                        <div class="ml-4 lg:ml-0">
+                            <h1 class="text-2xl font-semibold text-gray-900">{% block page_title %}Dashboard{% endblock %}</h1>
+                            <p class="text-sm text-gray-600">{% block page_subtitle %}Bienvenido de vuelta{% endblock %}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notificaciones -->
+                        <div class="relative">
+                            <button id="notifications-button" class="relative text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span id="notification-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                            </button>
+                            
+                            <!-- Dropdown de notificaciones -->
+                            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 glass-card rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto">
+                                <div class="px-4 py-2 border-b border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-sm font-medium text-gray-900">Notificaciones</h3>
+                                        <button id="mark-all-read" class="text-xs text-blue-600 hover:text-blue-800">
+                                            Marcar todas como leídas
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="notifications-list">
+                                    <div class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                                        <p class="text-sm">No tienes notificaciones</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Perfil usuario -->
+                        <div class="relative">
+                            <button id="user-menu-button" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                {% if user.profile.get_profile_picture_url %}
+                                    <img src="{{ user.profile.get_profile_picture_url }}" 
+                                         alt="Foto de perfil" 
+                                         class="w-8 h-8 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-8 h-8 bg-gradient-to-r from-rpgestor-purple to-rpgestor-blue rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">{{ user.profile.get_initials }}</span>
+                                    </div>
+                                {% endif %}
+                            </button>
+                            
+                            <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-50">
+                                <a href="{% url 'usuarios:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-user mr-2 text-blue-500"></i>Mi Perfil
+                                </a>
+                                <a href="{% url 'usuarios:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-cog mr-2 text-gray-500"></i>Configuración
+                                </a>
+                                <div class="border-t border-gray-100"></div>
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                                    <i class="fas fa-sign-out-alt mr-2 text-red-500"></i>Cerrar Sesión
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Contenido principal -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="container mx-auto px-6 py-8">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+        {% endblock %}
+    </div>
+    
+    <!-- Scripts base -->
+    <script>
+        // Objeto para almacenar instancias de gráficos
+        window.rpgestorCharts = window.rpgestorCharts || {};
+
+        // Gráficos de fondo (mismo código que login/logout)
+        function createBackgroundChart(canvasId, type, colors) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            // Destruir instancia existente si la hay
+            if (window.rpgestorCharts[canvasId]) {
+                window.rpgestorCharts[canvasId].destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            window.rpgestorCharts[canvasId] = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: ['A', 'B', 'C', 'D'],
+                    datasets: [{
+                        data: [Math.random() * 100, Math.random() * 100, Math.random() * 100, Math.random() * 100],
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: type === 'line' ? {
+                        x: { display: false },
+                        y: { display: false }
+                    } : {}
+                }
+            });
+        }
+
+        // Inicializar gráficos de fondo
+        setTimeout(() => {
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']);
+            createBackgroundChart('bgChart3', 'line', ['rgba(255,255,255,0.18)']);
+            createBackgroundChart('bgChart4', 'pie', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+        }, 100);
+
+        // Gráficos específicos del sidebar
+        setTimeout(() => {
+            createBackgroundChart('sidebarChart1', 'doughnut', ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('sidebarChart2', 'bar', ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']);
+            createBackgroundChart('sidebarChart3', 'line', ['rgba(255,255,255,0.1)']);
+            createBackgroundChart('sidebarChart4', 'pie', ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.05)']);
+        }, 200);
+
+        // Animar los gráficos de fondo
+        setInterval(() => {
+            createBackgroundChart('bgChart1', 'doughnut', ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('bgChart2', 'bar', ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']);
+            
+            // También animar los del sidebar
+            createBackgroundChart('sidebarChart1', 'doughnut', ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.05)']);
+            createBackgroundChart('sidebarChart2', 'bar', ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']);
+        }, 8000);
+
+        // Toggle sidebar en móvil
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        if (sidebarToggle && sidebar && sidebarOverlay) {
+            console.log('✅ Elementos de la barra lateral encontrados.');
+            function toggleSidebar() {
+                console.log('🔄 toggleSidebar ejecutado.');
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+                console.log('➡️ Barra lateral toggled.');
+            }
+            
+            sidebarToggle.addEventListener('click', function() {
+                console.log('👆 Clic en sidebarToggle.');
+                toggleSidebar();
+            });
+            sidebarOverlay.addEventListener('click', function() {
+                console.log('👆 Clic en sidebarOverlay.');
+                toggleSidebar();
+            });
+            console.log('✅ Event listeners de la barra lateral añadidos.');
+        } else {
+            console.error('❌ Elementos de la barra lateral NO encontrados.');
+        }
+        
+        // Toggle user menu con debug
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (userMenuButton && userMenu) {
+            console.log('User menu elements found:', userMenuButton, userMenu);
+            
+            userMenuButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('User menu button clicked');
+                
+                // Toggle hidden class
+                userMenu.classList.toggle('hidden');
+                
+                // Agregar clase de debug temporal
+                if (!userMenu.classList.contains('hidden')) {
+                    userMenu.classList.add('dropdown-debug');
+                    console.log('User menu should be visible now');
+                } else {
+                    userMenu.classList.remove('dropdown-debug');
+                    console.log('User menu hidden');
+                }
+            });
+            
+            // Cerrar user menu al hacer click fuera
+            document.addEventListener('click', function(e) {
+                if (!userMenuButton.contains(e.target) && !userMenu.contains(e.target)) {
+                    userMenu.classList.add('hidden');
+                    userMenu.classList.remove('dropdown-debug');
+                }
+            });
+        } else {
+            console.error('User menu elements not found!');
+        }
+        
+        // Responsive sidebar
+        function handleResize() {
+            console.log('📏 handleResize ejecutado.');
+            if (window.innerWidth >= 1024) {
+                // En desktop, asegurar que la barra lateral esté visible y el overlay oculto
+                if (sidebar) {
+                    sidebar.classList.remove('-translate-x-full');
+                    console.log('🖥️ Desktop: Barra lateral visible.');
+                }
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                    console.log('🖥️ Desktop: Overlay oculto.');
+                }
+            } else {
+                // En móvil, asegurar que la barra lateral esté oculta y el overlay oculto (hasta que se abra)
+                if (sidebar) {
+                    sidebar.classList.add('-translate-x-full');
+                    console.log('📱 Mobile: Barra lateral oculta.');
+                }
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                    console.log('📱 Mobile: Overlay oculto.');
+                }
+            }
+        }
+        
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Ejecutar al cargar
+        
+        // Sistema de notificaciones
+        const notificationsButton = document.getElementById('notifications-button');
+        const notificationsDropdown = document.getElementById('notifications-dropdown');
+        const notificationsList = document.getElementById('notifications-list');
+        const notificationCount = document.getElementById('notification-count');
+        const markAllReadBtn = document.getElementById('mark-all-read');
+        
+        // Toggle dropdown de notificaciones con debug
+        if (notificationsButton && notificationsDropdown) {
+            console.log('Notifications elements found:', notificationsButton, notificationsDropdown);
+            
+            notificationsButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Notifications button clicked');
+                
+                notificationsDropdown.classList.toggle('hidden');
+                
+                // Agregar clase de debug temporal
+                if (!notificationsDropdown.classList.contains('hidden')) {
+                    notificationsDropdown.classList.add('dropdown-debug');
+                    console.log('Notifications dropdown should be visible now');
+                    loadNotifications();
+                } else {
+                    notificationsDropdown.classList.remove('dropdown-debug');
+                    console.log('Notifications dropdown hidden');
+                }
+            });
+            
+            // Cerrar dropdown al hacer click fuera
+            document.addEventListener('click', function(e) {
+                if (!notificationsButton.contains(e.target) && !notificationsDropdown.contains(e.target)) {
+                    notificationsDropdown.classList.add('hidden');
+                    notificationsDropdown.classList.remove('dropdown-debug');
+                }
+            });
+        } else {
+            console.error('Notifications elements not found!');
+        }
+        
+        // Cargar notificaciones
+        function loadNotifications() {
+            fetch('/usuarios/api/notifications/')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationCount(data.total_unread);
+                    renderNotifications(data.notifications);
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+        
+        // Actualizar contador de notificaciones
+        function updateNotificationCount(count) {
+            if (count > 0) {
+                notificationCount.textContent = count > 99 ? '99+' : count;
+                notificationCount.classList.remove('hidden');
+            } else {
+                notificationCount.classList.add('hidden');
+            }
+        }
+        
+        // Renderizar notificaciones
+        function renderNotifications(notifications) {
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = `
+                    <div class="px-4 py-8 text-center text-gray-500">
+                        <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                        <p class="text-sm">No tienes notificaciones</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const notificationsHTML = notifications.map(notification => `
+                <div class="notification-item px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer" 
+                     data-id="${notification.id}" 
+                     onclick="openNotification('${notification.url}', ${notification.id})">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-envelope text-blue-600 text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm font-medium text-gray-900">${notification.subject}</p>
+                            <p class="text-xs text-gray-500">De: ${notification.sender}</p>
+                            <p class="text-xs text-gray-400 mt-1">${notification.timestamp}</p>
+                            <p class="text-xs text-gray-600 mt-1">${notification.body_preview}</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            notificationsList.innerHTML = notificationsHTML;
+        }
+        
+        // Abrir notificación
+        function openNotification(url, notificationId) {
+            // Marcar como leída
+            fetch(`/usuarios/api/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar contador
+                    loadNotificationCount();
+                }
+            });
+            
+            // Redirigir a la notificación
+            window.location.href = url;
+        }
+        
+        // Marcar todas como leídas
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                fetch('/usuarios/api/notifications/mark-all-read/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadNotifications();
+                        loadNotificationCount();
+                    }
+                });
+            });
+        }
+        
+        // Cargar contador de notificaciones
+        function loadNotificationCount() {
+            fetch('/usuarios/api/notifications/count/')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationCount(data.count);
+                })
+                .catch(error => {
+                    console.error('Error loading notification count:', error);
+                });
+        }
+        
+        // Función para obtener cookie CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Cargar contador inicial
+        loadNotificationCount();
+        
+        // Actualizar contador cada 30 segundos
+        setInterval(loadNotificationCount, 30000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html><!-- SIS
+TEMA DE MENÚS FUNCIONALES PARA BASE_UNIFIED -->
+<script>
+console.log('🚀 SISTEMA DE MENÚS PARA BASE_UNIFIED CARGADO');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Creando menús para base_unified...');
+    
+    // Variables para los menús
+    let unifiedUserMenu = null;
+    let unifiedNotifMenu = null;
+    
+    // CREAR MENÚ DE USUARIO PARA BASE_UNIFIED
+    unifiedUserMenu = document.createElement('div');
+    unifiedUserMenu.id = 'unified-user-menu';
+    unifiedUserMenu.innerHTML = `
+        <div style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #1a202c;">
+            Mi Cuenta
+        </div>
+        <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #4a5568; text-decoration: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f7fafc'" onmouseout="this.style.backgroundColor='transparent'">
+            <i class="fas fa-user" style="margin-right: 8px; color: #3182ce; width: 16px;"></i>Mi Perfil
+        </a>
+        <a href="/usuarios/profile/" style="display: block; padding: 12px 16px; color: #4a5568; text-decoration: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f7fafc'" onmouseout="this.style.backgroundColor='transparent'">
+            <i class="fas fa-cog" style="margin-right: 8px; color: #718096; width: 16px;"></i>Configuración
+        </a>
+        <div style="border-top: 1px solid #e2e8f0; margin: 4px 0;"></div>
+        <a href="/accounts/logout/" style="display: block; padding: 12px 16px; color: #4a5568; text-decoration: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#fed7d7'" onmouseout="this.style.backgroundColor='transparent'">
+            <i class="fas fa-sign-out-alt" style="margin-right: 8px; color: #e53e3e; width: 16px;"></i>Cerrar Sesión
+        </a>
+    `;
+    
+    // Aplicar estilos al menú de usuario
+    unifiedUserMenu.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        min-width: 200px;
+        display: none;
+        z-index: 999999;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+    `;
+    
+    document.body.appendChild(unifiedUserMenu);
+    console.log('✅ Menú de usuario unified creado');
+    
+    // CREAR MENÚ DE NOTIFICACIONES PARA BASE_UNIFIED
+    unifiedNotifMenu = document.createElement('div');
+    unifiedNotifMenu.id = 'unified-notif-menu';
+    unifiedNotifMenu.innerHTML = `
+        <div style="padding: 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1a202c;">Notificaciones</h3>
+                <button onclick="markAllAsReadUnified()" style="background: none; border: none; color: #3182ce; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px;" onmouseover="this.style.backgroundColor='#ebf8ff'" onmouseout="this.style.backgroundColor='transparent'">
+                    Marcar todas como leídas
+                </button>
+            </div>
+        </div>
+        <div id="unified-notifications-list" style="max-height: 300px; overflow-y: auto;">
+            <div style="padding: 32px; text-align: center; color: #718096;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 20px; margin-bottom: 8px; display: block;"></i>
+                <p style="margin: 0; font-size: 14px;">Cargando notificaciones...</p>
+            </div>
+        </div>
+    `;
+    
+    // Aplicar estilos al menú de notificaciones
+    unifiedNotifMenu.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 80px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        min-width: 320px;
+        max-height: 400px;
+        display: none;
+        z-index: 999999;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+    `;
+    
+    document.body.appendChild(unifiedNotifMenu);
+    console.log('✅ Menú de notificaciones unified creado');
+    
+    // AGREGAR EVENT LISTENERS PARA BASE_UNIFIED
+    const userBtn = document.getElementById('user-menu-button');
+    const notifBtn = document.getElementById('notifications-button');
+    
+    if (userBtn) {
+        // Limpiar event listeners anteriores
+        const newUserBtn = userBtn.cloneNode(true);
+        userBtn.parentNode.replaceChild(newUserBtn, userBtn);
+        
+        newUserBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN MENÚ DE USUARIO UNIFIED!');
+            
+            // Cerrar notificaciones
+            if (unifiedNotifMenu) {
+                unifiedNotifMenu.style.display = 'none';
+            }
+            
+            // Toggle menú de usuario
+            if (unifiedUserMenu.style.display === 'none' || unifiedUserMenu.style.display === '') {
+                unifiedUserMenu.style.display = 'block';
+                console.log('🟢 MENÚ DE USUARIO UNIFIED VISIBLE!');
+            } else {
+                unifiedUserMenu.style.display = 'none';
+                console.log('🔴 MENÚ DE USUARIO UNIFIED OCULTO');
+            }
+        });
+        console.log('✅ Event listener unified agregado al botón de usuario');
+    }
+    
+    if (notifBtn) {
+        // Limpiar event listeners anteriores
+        const newNotifBtn = notifBtn.cloneNode(true);
+        notifBtn.parentNode.replaceChild(newNotifBtn, notifBtn);
+        
+        newNotifBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔥 CLICK EN NOTIFICACIONES UNIFIED!');
+            
+            // Cerrar menú de usuario
+            if (unifiedUserMenu) {
+                unifiedUserMenu.style.display = 'none';
+            }
+            
+            // Toggle notificaciones
+            if (unifiedNotifMenu.style.display === 'none' || unifiedNotifMenu.style.display === '') {
+                unifiedNotifMenu.style.display = 'block';
+                console.log('🟢 NOTIFICACIONES UNIFIED VISIBLES!');
+                loadUnifiedNotifications();
+            } else {
+                unifiedNotifMenu.style.display = 'none';
+                console.log('🔴 NOTIFICACIONES UNIFIED OCULTAS');
+            }
+        });
+        console.log('✅ Event listener unified agregado al botón de notificaciones');
+    }
+    
+    // Cerrar menús al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (unifiedUserMenu && 
+            !unifiedUserMenu.contains(e.target) && 
+            !document.getElementById('user-menu-button').contains(e.target)) {
+            unifiedUserMenu.style.display = 'none';
+        }
+        
+        if (unifiedNotifMenu && 
+            !unifiedNotifMenu.contains(e.target) && 
+            !document.getElementById('notifications-button').contains(e.target)) {
+            unifiedNotifMenu.style.display = 'none';
+        }
+    });
+    
+    console.log('🎯 MENÚS UNIFIED COMPLETAMENTE CONFIGURADOS!');
+});
+
+// Función para cargar notificaciones en base_unified
+function loadUnifiedNotifications() {
+    console.log('📡 Cargando notificaciones unified...');
+    
+    fetch('/usuarios/api/notifications/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Notificaciones unified cargadas:', data);
+            renderUnifiedNotifications(data.notifications);
+        })
+        .catch(error => {
+            console.error('❌ Error cargando notificaciones unified:', error);
+            const container = document.getElementById('unified-notifications-list');
+            if (container) {
+                container.innerHTML = `
+                    <div style="padding: 32px; text-align: center; color: #e53e3e;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 14px;">Error cargando notificaciones</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+// Función para renderizar notificaciones en base_unified
+function renderUnifiedNotifications(notifications) {
+    const container = document.getElementById('unified-notifications-list');
+    if (!container) return;
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 32px; text-align: center; color: #718096;">
+                <i class="fas fa-bell-slash" style="font-size: 20px; margin-bottom: 8px; display: block;"></i>
+                <p style="margin: 0; font-size: 14px;">No tienes notificaciones</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const notificationsHTML = notifications.map(notification => `
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background-color 0.2s;" 
+             onmouseover="this.style.backgroundColor='#f8fafc'" 
+             onmouseout="this.style.backgroundColor='transparent'"
+             onclick="openUnifiedNotification('${notification.url}', ${notification.id})">
+            <div style="display: flex; align-items: start;">
+                <div style="width: 32px; height: 32px; background: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                    <i class="fas fa-envelope" style="color: #3182ce; font-size: 14px;"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <p style="margin: 0 0 4px 0; font-weight: 600; color: #1a202c; font-size: 14px; line-height: 1.4;">${notification.subject}</p>
+                    <p style="margin: 0 0 4px 0; color: #718096; font-size: 12px;">De: ${notification.sender}</p>
+                    <p style="margin: 0; color: #a0aec0; font-size: 12px;">${notification.timestamp}</p>
+                </div>
+                <div style="width: 6px; height: 6px; background: #3182ce; border-radius: 50%; flex-shrink: 0; margin-top: 6px;"></div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = notificationsHTML;
+}
+
+// Función para abrir notificación en base_unified
+function openUnifiedNotification(url, notificationId) {
+    console.log('📖 Abriendo notificación unified:', notificationId);
+    
+    // Marcar como leída
+    fetch(`/usuarios/api/notifications/${notificationId}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookieUnified('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Notificación unified marcada como leída');
+        }
+    })
+    .catch(error => console.error('❌ Error marcando notificación unified:', error));
+    
+    window.location.href = url;
+}
+
+// Función para marcar todas como leídas en base_unified
+function markAllAsReadUnified() {
+    console.log('✅ Marcando todas las notificaciones unified como leídas');
+    
+    fetch('/usuarios/api/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookieUnified('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Todas las notificaciones unified marcadas como leídas');
+            loadUnifiedNotifications();
+        }
+    })
+    .catch(error => console.error('❌ Error marcando todas las notificaciones unified:', error));
+}
+
+// Función para obtener cookie CSRF en base_unified
+function getCookieUnified(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>

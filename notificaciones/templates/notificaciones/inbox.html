@@ -1,0 +1,92 @@
+{% extends 'base_unified.html' %}
+
+{% block title %}Bandeja de Entrada - RPGestor{% endblock %}
+{% block page_title %}Bandeja de Entrada{% endblock %}
+{% block page_subtitle %}Gestiona tus mensajes internos{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% if user.groups.first.name == 'Gestor' %}
+    {% include 'menus/gestor_menu.html' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+    {% include 'menus/jefe_ventas_menu.html' %}
+{% else %}
+    {% include 'menus/vendedor_menu.html' %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <!-- Header de la página -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-inbox text-white text-2xl mr-3"></i>
+                <h2 class="text-xl font-semibold text-white">Mensajes Recibidos</h2>
+            </div>
+            <a href="{% url 'notificaciones:enviar' %}" 
+               class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Nuevo Mensaje
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenido de mensajes -->
+    <div class="p-6">
+        {% if msgs %}
+            <div class="space-y-4">
+                {% for msg in msgs %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 {% if not msg.read %}bg-blue-50 border-blue-200{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <a href="{% url 'notificaciones:detalle' pk=msg.pk %}" 
+                               class="block hover:text-blue-600 transition-colors">
+                                <div class="flex items-center mb-2">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 {% if not msg.read %}font-bold{% endif %}">
+                                            {{ msg.subject }}
+                                        </h3>
+                                        <p class="text-sm text-gray-600">
+                                            De: {{ msg.sender.get_full_name|default:msg.sender.username }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            {% if not msg.read %}
+                                <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                    <i class="fas fa-circle text-red-500 text-xs mr-1"></i>
+                                    Nuevo
+                                </span>
+                            {% endif %}
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ msg.timestamp|date:"d/m/Y H:i" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-inbox text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No tienes mensajes</h3>
+                <p class="text-gray-500 mb-6">Cuando recibas mensajes, aparecerán aquí.</p>
+                <a href="{% url 'notificaciones:enviar' %}" 
+                   class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Escribir Primer Mensaje
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

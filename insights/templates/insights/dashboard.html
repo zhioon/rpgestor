@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Insights & Dashboards{% endblock %}
+{% block content %}
+<h1>Panel de Ventas</h1>
+
+<div>
+  <label>Desde: <input type="date" id="desde"></label>
+  <label>Hasta: <input type="date" id="hasta"></label>
+  <button id="btn-refrescar">Refrescar</button>
+</div>
+
+<canvas id="chartVentas" width="800" height="300"></canvas>
+<canvas id="chartProyeccion" width="800" height="300"></canvas>
+
+<canvas id="chartVendedor" width="400" height="300"></canvas>
+<canvas id="chartProducto" width="400" height="300"></canvas>
+<canvas id="chartGrupo" width="400" height="300"></canvas>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  async function fetchJson(endpoint, params='') {
+    const res = await fetch(`/insights/api/${endpoint}/?${params}`);
+    return await res.json();
+  }
+
+  function drawLine(ctx, labels, data, label) {
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label, data }] },
+      options: { responsive: true }
+    });
+  }
+
+  function drawBar(ctx, labels, data, label) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label, data }] },
+      options: { responsive: true }
+    });
+  }
+
+  document.getElementById('btn-refrescar').onclick = async () => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    const params = `desde=${desde}&hasta=${hasta}`;
+
+    // 1) Ventas Diarias
+    {
+      const { ventas } = await fetchJson('ventas', params);
+      drawLine(
+        document.getElementById('chartVentas'),
+        ventas.map(x => x.fecha),
+        ventas.map(x => x.total),
+        'Ventas Diarias'
+      );
+    }
+
+    // 2) Proyección
+    {
+      const { proyeccion } = await fetchJson('proyeccion', 'dias=7');
+      drawLine(
+        document.getElementById('chartProyeccion'),
+        proyeccion.map(x => x.dia),
+        proyeccion.map(x => x.proyeccion),
+        'Proyección Próximos Días'
+      );
+    }
+
+    // 3) Ventas por Vendedor
+    {
+      const { ventas_vendedor } = await fetchJson('ventas/vendedor', params);
+      drawBar(
+        document.getElementById('chartVendedor'),
+        ventas_vendedor.map(x => x.vendedor),
+        ventas_vendedor.map(x => x.total),
+        'Ventas por Vendedor'
+      );
+    }
+
+    // 4) Ingresos por Producto (Top 20)
+    {
+      const { ventas_producto } = await fetchJson('ventas/producto', params);
+      drawBar(
+        document.getElementById('chartProducto'),
+        ventas_producto.map(x => x.producto),
+        ventas_producto.map(x => x.ingresos),
+        'Ingresos por Producto'
+      );
+    }
+
+    // 5) Ingresos por Grupo (Top 5)
+    {
+      const { ventas_por_grupo } = await fetchJson('ventas/grupo', params);
+      drawBar(
+        document.getElementById('chartGrupo'),
+        ventas_por_grupo.map(x => x.grupo),
+        ventas_por_grupo.map(x => x.ingresos),
+        'Ingresos por Grupo'
+      );
+    }
+  };
+
+  // Carga inicial: últimos 30 días
+  const hoy  = new Date().toISOString().slice(0,10);
+  const hace30 = new Date(Date.now() - 30*24*3600*1000).toISOString().slice(0,10);
+  document.getElementById('desde').value = hace30;
+  document.getElementById('hasta').value = hoy;
+  document.getElementById('btn-refrescar').click();
+</script>
+{% endblock %}

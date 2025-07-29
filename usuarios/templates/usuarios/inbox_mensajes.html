@@ -1,0 +1,402 @@
+{% extends 'base_unified.html' %}
+{% load static %}
+
+{% block title %}Bandeja de Entrada - Mensajes{% endblock %}
+{% block page_title %}Bandeja de Entrada{% endblock %}
+{% block page_subtitle %}Gestiona tus mensajes internos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mensaje-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    .mensaje-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .mensaje-no-leido {
+        background-color: #f8fafc;
+        border-left-color: #3b82f6;
+    }
+    .mensaje-leido {
+        background-color: #ffffff;
+        border-left-color: #e5e7eb;
+    }
+    .prioridad-urgente { border-left-color: #ef4444 !important; }
+    .prioridad-alta { border-left-color: #f59e0b !important; }
+    .prioridad-media { border-left-color: #3b82f6 !important; }
+    .prioridad-baja { border-left-color: #6b7280 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Estadísticas Rápidas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-envelope text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Total Mensajes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_mensajes }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-envelope-open text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">No Leídos</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ mensajes_no_leidos }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-check-double text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Leídos</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ mensajes_leidos }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-star text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Prioridad Alta</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats_por_prioridad.A.count|default:0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Principal -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sidebar con filtros -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
+                    <h3 class="text-xl font-semibold text-white">
+                        <i class="fas fa-filter mr-2"></i>Filtros de Mensajes
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form method="GET" class="space-y-4">
+                        <!-- Búsqueda -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+                            <input type="text" name="busqueda" value="{{ busqueda }}" 
+                                   placeholder="Buscar en asunto o mensaje..."
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <!-- Tipo de mensaje -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                            <select name="tipo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="todos" {% if filtro_tipo == 'todos' %}selected{% endif %}>Todos</option>
+                                {% for tipo_key, tipo_label in tipos_mensaje %}
+                                <option value="{{ tipo_key }}" {% if filtro_tipo == tipo_key %}selected{% endif %}>
+                                    {{ tipo_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Prioridad -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Prioridad</label>
+                            <select name="prioridad" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="todos" {% if filtro_prioridad == 'todos' %}selected{% endif %}>Todas</option>
+                                {% for prioridad_key, prioridad_label in prioridades %}
+                                <option value="{{ prioridad_key }}" {% if filtro_prioridad == prioridad_key %}selected{% endif %}>
+                                    {{ prioridad_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Estado -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                            <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos</option>
+                                <option value="no_leidos" {% if filtro_estado == 'no_leidos' %}selected{% endif %}>No Leídos</option>
+                                <option value="leidos" {% if filtro_estado == 'leidos' %}selected{% endif %}>Leídos</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-search mr-2"></i>Filtrar
+                        </button>
+                        
+                        <a href="{% url 'usuarios:inbox_mensajes' %}" class="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors block text-center">
+                            <i class="fas fa-times mr-2"></i>Limpiar
+                        </a>
+                    </form>
+                    
+                    <!-- Acciones rápidas -->
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Acciones Rápidas</h4>
+                        <button onclick="marcarTodosLeidos()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors mb-2">
+                            <i class="fas fa-check-double mr-2"></i>Marcar Todos Leídos
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estadísticas por tipo -->
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
+                    <h3 class="text-xl font-semibold text-white">
+                        <i class="fas fa-chart-pie mr-2"></i>Mensajes por Tipo
+                    </h3>
+                </div>
+                <div class="p-6">
+                    {% for tipo_key, stats in stats_por_tipo.items %}
+                    {% if stats.count > 0 %}
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">{{ stats.label }}</span>
+                        <span class="text-sm font-semibold">{{ stats.count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ stats.porcentaje }}%"></div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lista de mensajes -->
+        <div class="lg:col-span-2">
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-500 to-blue-600 px-6 py-4">
+                    <h3 class="text-xl font-semibold text-white">
+                        <i class="fas fa-inbox mr-2"></i>Tus Mensajes
+                    </h3>
+                </div>
+                <div class="p-6">
+                    {% if mensajes %}
+                    <div class="space-y-4">
+                        {% for mensaje in mensajes %}
+                        <div class="mensaje-card {% if not mensaje.leido %}mensaje-no-leido{% else %}mensaje-leido{% endif %} prioridad-{{ mensaje.prioridad|lower }} bg-white rounded-lg shadow-sm p-6 cursor-pointer"
+                             onclick="window.location.href='{% url 'usuarios:detalle_mensaje' mensaje.id %}'">
+                            
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <!-- Header del mensaje -->
+                                    <div class="flex items-center mb-2">
+                                        {% if not mensaje.leido %}
+                                        <div class="w-3 h-3 bg-blue-600 rounded-full mr-3"></div>
+                                        {% else %}
+                                        <div class="w-3 h-3 bg-gray-300 rounded-full mr-3"></div>
+                                        {% endif %}
+                                        
+                                        <span class="text-sm font-medium text-gray-900">
+                                            {{ mensaje.jefe.get_full_name|default:mensaje.jefe.username }}
+                                        </span>
+                                        
+                                        <!-- Tipo de mensaje -->
+                                        <span class="ml-2 px-2 py-1 text-xs rounded-full
+                                            {% if mensaje.tipo == 'M' %}bg-blue-100 text-blue-800
+                                            {% elif mensaje.tipo == 'A' %}bg-red-100 text-red-800
+                                            {% elif mensaje.tipo == 'F' %}bg-green-100 text-green-800
+                                            {% elif mensaje.tipo == 'R' %}bg-yellow-100 text-yellow-800
+                                            {% elif mensaje.tipo == 'RE' %}bg-purple-100 text-purple-800
+                                            {% endif %}">
+                                            {{ mensaje.get_tipo_display }}
+                                        </span>
+                                        
+                                        <!-- Prioridad -->
+                                        <span class="ml-2 px-2 py-1 text-xs rounded-full
+                                            {% if mensaje.prioridad == 'U' %}bg-red-100 text-red-800
+                                            {% elif mensaje.prioridad == 'A' %}bg-orange-100 text-orange-800
+                                            {% elif mensaje.prioridad == 'M' %}bg-blue-100 text-blue-800
+                                            {% elif mensaje.prioridad == 'B' %}bg-gray-100 text-gray-800
+                                            {% endif %}">
+                                            {{ mensaje.get_prioridad_display }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Asunto -->
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                        {{ mensaje.asunto }}
+                                    </h3>
+                                    
+                                    <!-- Preview del mensaje -->
+                                    <p class="text-gray-600 text-sm line-clamp-2">
+                                        {{ mensaje.mensaje|truncatewords:20 }}
+                                    </p>
+                                    
+                                    <!-- Fecha -->
+                                    <div class="flex items-center mt-3 text-xs text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        {{ mensaje.created_at|date:"d/m/Y H:i" }}
+                                        {% if mensaje.leido and mensaje.fecha_leido %}
+                                        <span class="ml-4">
+                                            <i class="fas fa-eye mr-1"></i>
+                                            Leído el {{ mensaje.fecha_leido|date:"d/m/Y H:i" }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Acciones -->
+                                <div class="flex items-center space-x-2 ml-4">
+                                    {% if not mensaje.leido %}
+                                    <button onclick="event.stopPropagation(); marcarLeido({{ mensaje.id }})" 
+                                            class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50"
+                                            title="Marcar como leído">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% else %}
+                                    <button onclick="event.stopPropagation(); marcarNoLeido({{ mensaje.id }})" 
+                                            class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-50"
+                                            title="Marcar como no leído">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <i class="fas fa-chevron-right text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Paginación -->
+                    {% if mensajes.has_other_pages %}
+                    <div class="mt-8 flex justify-center">
+                        <nav class="flex items-center space-x-2">
+                            {% if mensajes.has_previous %}
+                            <a href="?page={{ mensajes.previous_page_number }}{% if busqueda %}&busqueda={{ busqueda }}{% endif %}{% if filtro_tipo != 'todos' %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_prioridad != 'todos' %}&prioridad={{ filtro_prioridad }}{% endif %}{% if filtro_estado != 'todos' %}&estado={{ filtro_estado }}{% endif %}" 
+                               class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Anterior
+                            </a>
+                            {% endif %}
+                            
+                            <span class="px-3 py-2 text-sm font-medium text-gray-700">
+                                Página {{ mensajes.number }} de {{ mensajes.paginator.num_pages }}
+                            </span>
+                            
+                            {% if mensajes.has_next %}
+                            <a href="?page={{ mensajes.next_page_number }}{% if busqueda %}&busqueda={{ busqueda }}{% endif %}{% if filtro_tipo != 'todos' %}&tipo={{ filtro_tipo }}{% endif %}{% if filtro_prioridad != 'todos' %}&prioridad={{ filtro_prioridad }}{% endif %}{% if filtro_estado != 'todos' %}&estado={{ filtro_estado }}{% endif %}" 
+                               class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Siguiente
+                            </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <!-- Estado vacío -->
+                    <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+                        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay mensajes</h3>
+                        <p class="text-gray-600">
+                            {% if busqueda or filtro_tipo != 'todos' or filtro_prioridad != 'todos' or filtro_estado != 'todos' %}
+                            No se encontraron mensajes con los filtros aplicados.
+                            {% else %}
+                            Aún no has recibido ningún mensaje.
+                            {% endif %}
+                        </p>
+                        {% if busqueda or filtro_tipo != 'todos' or filtro_prioridad != 'todos' or filtro_estado != 'todos' %}
+                        <a href="{% url 'usuarios:inbox_mensajes' %}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            Ver todos los mensajes
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Scripts -->
+<script>
+function marcarLeido(mensajeId) {
+    fetch(`/usuarios/inbox/mensaje/${mensajeId}/marcar-leido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al marcar el mensaje como leído');
+    });
+}
+
+function marcarNoLeido(mensajeId) {
+    fetch(`/usuarios/inbox/mensaje/${mensajeId}/marcar-no-leido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al marcar el mensaje como no leído');
+    });
+}
+
+function marcarTodosLeidos() {
+    if (confirm('¿Estás seguro de que quieres marcar todos los mensajes como leídos?')) {
+        fetch('/usuarios/inbox/marcar-todos-leidos/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al marcar todos los mensajes como leídos');
+        });
+    }
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

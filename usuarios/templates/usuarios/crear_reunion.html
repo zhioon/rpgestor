@@ -1,0 +1,208 @@
+{% extends 'base_unified.html' %}
+{% load static %}
+
+{% block title %}Crear Reunión - RPGestor{% endblock %}
+{% block page_title %}Crear Reunión{% endblock %}
+{% block page_subtitle %}Programa una reunión con clientes o equipo{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% if user.groups.first.name == 'Gestor' %}
+    {% include 'menus/gestor_menu.html' %}
+{% elif user.groups.first.name == 'JefeVentas' %}
+    {% include 'menus/jefe_ventas_menu.html' %}
+{% else %}
+    {% include 'menus/vendedor_menu.html' %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Botón de regreso -->
+    <div class="mb-6">
+        <a href="{% url 'usuarios:mi_agenda' %}" 
+           class="inline-flex items-center text-blue-600 hover:text-blue-800">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver a Mi Agenda
+        </a>
+    </div>
+
+    <!-- Formulario de crear reunión -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center mb-6">
+            <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">Nueva Reunión</h2>
+                <p class="text-gray-600">Completa los detalles de la reunión</p>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Información básica -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="titulo" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-heading text-gray-400 mr-1"></i>
+                        Título de la Reunión *
+                    </label>
+                    <input type="text" 
+                           id="titulo" 
+                           name="titulo" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Ej: Presentación de productos, Revisión mensual...">
+                </div>
+
+                <div>
+                    <label for="vendedores" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-users text-gray-400 mr-1"></i>
+                        Vendedores a Invitar *
+                    </label>
+                    <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-md p-3">
+                        {% for vendedor in vendedores %}
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   name="vendedores" 
+                                   value="{{ vendedor.id }}" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-user text-gray-400 mr-2"></i>
+                                <span class="text-sm">{{ vendedor.user.get_full_name|default:vendedor.user.username }}</span>
+                                <span class="text-xs text-gray-500 ml-2">({{ vendedor.user.email }})</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Selecciona uno o más vendedores para la reunión
+                    </p>
+                </div>
+            </div>
+
+            <!-- Fecha y hora -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt text-gray-400 mr-1"></i>
+                        Fecha y Hora de Inicio *
+                    </label>
+                    <input type="datetime-local" 
+                           id="fecha_inicio" 
+                           name="fecha_inicio" 
+                           required
+                           min="{{ hoy|date:'Y-m-d' }}T{{ ahora|time:'H:i' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-check text-gray-400 mr-1"></i>
+                        Fecha y Hora de Fin (Opcional)
+                    </label>
+                    <input type="datetime-local" 
+                           id="fecha_fin" 
+                           name="fecha_fin" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Ubicación y prioridad -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>
+                        Ubicación
+                    </label>
+                    <input type="text" 
+                           id="ubicacion" 
+                           name="ubicacion" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Ej: Oficina principal, Sala de juntas, Virtual...">
+                </div>
+
+                <div>
+                    <label for="prioridad" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-exclamation-circle text-gray-400 mr-1"></i>
+                        Prioridad
+                    </label>
+                    <select id="prioridad" 
+                            name="prioridad" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        {% for value, label in prioridades %}
+                        <option value="{{ value }}" {% if value == 'M' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Recordatorio -->
+            <div>
+                <label for="minutos_recordatorio" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-bell text-gray-400 mr-1"></i>
+                    Recordatorio
+                </label>
+                <select id="minutos_recordatorio" 
+                        name="minutos_recordatorio" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="15">15 minutos antes</option>
+                    <option value="30" selected>30 minutos antes</option>
+                    <option value="60">1 hora antes</option>
+                    <option value="120">2 horas antes</option>
+                    <option value="1440">1 día antes</option>
+                </select>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-align-left text-gray-400 mr-1"></i>
+                    Descripción y Agenda
+                </label>
+                <textarea id="descripcion" 
+                          name="descripcion" 
+                          rows="4"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Describe los temas a tratar, objetivos de la reunión, participantes, etc."></textarea>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{% url 'usuarios:mi_agenda' %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <i class="fas fa-save mr-2"></i>
+                    Crear Reunión
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Auto-calcular fecha fin cuando se selecciona fecha inicio
+document.getElementById('fecha_inicio').addEventListener('change', function() {
+    const fechaInicio = new Date(this.value);
+    if (fechaInicio) {
+        // Agregar 1 hora por defecto
+        const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000));
+        
+        // Formatear para datetime-local
+        const year = fechaFin.getFullYear();
+        const month = String(fechaFin.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaFin.getDate()).padStart(2, '0');
+        const hours = String(fechaFin.getHours()).padStart(2, '0');
+        const minutes = String(fechaFin.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('fecha_fin').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+});
+</script>
+{% endblock %}

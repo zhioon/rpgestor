@@ -1,0 +1,395 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Presupuestos Mensuales - RPGestor{% endblock %}
+
+{% block page_title %}Presupuestos Mensuales{% endblock %}
+{% block page_subtitle %}Gestión de presupuestos por mes con historial completo{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Selector de Mes y Año -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold text-gray-900">
+                Presupuestos de {{ mes_nombre }} {{ año_seleccionado }}
+            </h2>
+            
+            <div class="flex flex-wrap gap-4">
+                <!-- Selector de Mes -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Mes:</label>
+                    <select id="selector-mes" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for mes_num, mes_nombre_opt in meses_disponibles %}
+                        <option value="{{ mes_num }}" {% if mes_num == mes_seleccionado %}selected{% endif %}>
+                            {{ mes_nombre_opt }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Selector de Año -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm font-medium text-gray-700">Año:</label>
+                    <select id="selector-año" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for año in años_disponibles %}
+                        <option value="{{ año }}" {% if año == año_seleccionado %}selected{% endif %}>
+                            {{ año }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button onclick="cambiarPeriodo()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-search mr-2"></i>Ver Período
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas del Mes Seleccionado -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Presupuesto Total del Mes -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Presupuesto {{ mes_nombre }}</h3>
+                    <p class="text-2xl font-bold text-gray-900">${{ presupuesto_total_mes|floatformat:0|intcomma }}</p>
+                    <p class="text-sm text-blue-600">{{ porcentaje_equipo|floatformat:1 }}% cumplido</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores Excelentes -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-trophy text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Excelente</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_excelentes }}</p>
+                    <p class="text-sm text-green-600">≥100% meta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores Buenos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Buen Rendimiento</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_buenos }}</p>
+                    <p class="text-sm text-blue-600">80-99% meta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Necesitan Atención -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 mr-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Necesitan Atención</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_regulares|add:vendedores_bajos }}</p>
+                    <p class="text-sm text-red-600"><80% meta</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Vendedores con Presupuestos Mensuales -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Presupuestos Individuales - {{ mes_nombre }} {{ año_seleccionado }}</h2>
+            <p class="text-sm text-gray-600 mt-1">Gestión de presupuestos específicos por mes</p>
+        </div>
+
+        {% if vendedores_data %}
+        <div class="divide-y divide-gray-200">
+            {% for vendedor_data in vendedores_data %}
+            <div class="p-6">
+                <!-- Información del Vendedor -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-4">
+                        <!-- Avatar -->
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                <span class="text-white text-lg font-bold">
+                                    {{ vendedor_data.user.first_name.0|default:vendedor_data.user.username.0|upper }}{{ vendedor_data.user.last_name.0|upper }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Datos Básicos -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                {{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}
+                            </h3>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                <span>{{ vendedor_data.user.email }}</span>
+                                {% if vendedor_data.tiene_presupuesto_especifico %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Presupuesto Específico
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-info-circle mr-1"></i>Presupuesto Base
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado de Cumplimiento -->
+                    <div class="text-right">
+                        <div class="text-2xl font-bold 
+                            {% if vendedor_data.porcentaje_cumplimiento >= 100 %}text-green-600
+                            {% elif vendedor_data.porcentaje_cumplimiento >= 80 %}text-blue-600
+                            {% elif vendedor_data.porcentaje_cumplimiento >= 50 %}text-yellow-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ vendedor_data.porcentaje_cumplimiento|floatformat:1 }}%
+                        </div>
+                        <div class="text-sm text-gray-500">Cumplimiento</div>
+                    </div>
+                </div>
+
+                <!-- Presupuesto y Ventas del Mes -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Presupuesto del Mes -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Presupuesto {{ mes_nombre }}</h4>
+                            <button onclick="editarPresupuestoMensual({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}', {{ año_seleccionado }}, {{ mes_seleccionado }}, {{ vendedor_data.monto_presupuesto }}, '{{ vendedor_data.presupuesto_mes.observaciones|default:"" }}')" 
+                                    class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <div class="text-xl font-bold text-gray-900">${{ vendedor_data.monto_presupuesto|floatformat:0|intcomma }}</div>
+                        <div class="text-sm text-gray-500">
+                            {% if vendedor_data.presupuesto_mes.observaciones %}
+                                {{ vendedor_data.presupuesto_mes.observaciones|truncatechars:30 }}
+                            {% else %}
+                                Meta para {{ mes_nombre }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Ventas del Mes -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Ventas {{ mes_nombre }}</h4>
+                        <div class="text-xl font-bold text-green-600">${{ vendedor_data.ventas_mes|floatformat:0|intcomma }}</div>
+                        <div class="text-sm text-gray-500">Acumulado del mes</div>
+                    </div>
+
+                    <!-- Diferencia -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Diferencia</h4>
+                        <div class="text-xl font-bold {% if vendedor_data.diferencia_positiva %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if vendedor_data.diferencia_positiva %}+{% else %}-{% endif %}${{ vendedor_data.diferencia|floatformat:0|intcomma }}
+                        </div>
+                        <div class="text-sm text-gray-500">vs presupuesto</div>
+                    </div>
+                </div>
+
+                <!-- Historial de Presupuestos -->
+                {% if vendedor_data.historial_presupuestos %}
+                <div class="border-t border-gray-200 pt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Historial de Presupuestos (Últimos 6 meses)</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {% for historial in vendedor_data.historial_presupuestos %}
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500 mb-1">{{ historial.mes_nombre }} {{ historial.año }}</div>
+                            <div class="text-sm font-bold text-gray-900">${{ historial.monto|floatformat:0|intcomma }}</div>
+                            <div class="text-xs 
+                                {% if historial.porcentaje >= 100 %}text-green-600
+                                {% elif historial.porcentaje >= 80 %}text-blue-600
+                                {% elif historial.porcentaje >= 50 %}text-yellow-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ historial.porcentaje|floatformat:1 }}%
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-calendar-times text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay datos para este período</h3>
+            <p class="text-gray-500">No se encontraron vendedores para {{ mes_nombre }} {{ año_seleccionado }}.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para Editar/Crear Presupuesto Mensual -->
+<div id="modal-presupuesto-mensual" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Presupuesto Mensual</h3>
+            <form id="form-presupuesto-mensual">
+                <input type="hidden" id="pm-vendedor-id">
+                <input type="hidden" id="pm-año">
+                <input type="hidden" id="pm-mes">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vendedor:</label>
+                    <input type="text" id="pm-vendedor-nombre" readonly 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Período:</label>
+                    <input type="text" id="pm-periodo" readonly 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto del Presupuesto:</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500">$</span>
+                        <input type="number" id="pm-monto" required min="0" step="1000"
+                               class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones (opcional):</label>
+                    <textarea id="pm-observaciones" rows="3" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="Ej: Temporada alta, promociones especiales, etc."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalPresupuestoMensual()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Guardar Presupuesto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para cambiar período
+function cambiarPeriodo() {
+    const mes = document.getElementById('selector-mes').value;
+    const año = document.getElementById('selector-año').value;
+    
+    const params = new URLSearchParams();
+    params.append('mes', mes);
+    params.append('año', año);
+    
+    window.location.href = '?' + params.toString();
+}
+
+// Funciones para modal de presupuesto mensual
+function editarPresupuestoMensual(vendedorId, vendedorNombre, año, mes, montoActual, observaciones) {
+    document.getElementById('pm-vendedor-id').value = vendedorId;
+    document.getElementById('pm-vendedor-nombre').value = vendedorNombre;
+    document.getElementById('pm-año').value = año;
+    document.getElementById('pm-mes').value = mes;
+    document.getElementById('pm-monto').value = montoActual;
+    document.getElementById('pm-observaciones').value = observaciones || '';
+    
+    // Crear texto del período
+    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    document.getElementById('pm-periodo').value = `${meses[mes]} ${año}`;
+    
+    document.getElementById('modal-presupuesto-mensual').classList.remove('hidden');
+}
+
+function cerrarModalPresupuestoMensual() {
+    document.getElementById('modal-presupuesto-mensual').classList.add('hidden');
+    document.getElementById('form-presupuesto-mensual').reset();
+}
+
+// Enviar formulario de presupuesto mensual
+document.getElementById('form-presupuesto-mensual').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        vendedor_id: document.getElementById('pm-vendedor-id').value,
+        año: document.getElementById('pm-año').value,
+        mes: document.getElementById('pm-mes').value,
+        monto_presupuesto: document.getElementById('pm-monto').value,
+        observaciones: document.getElementById('pm-observaciones').value
+    };
+    
+    // Validar datos
+    if (!data.monto_presupuesto || parseFloat(data.monto_presupuesto) < 0) {
+        alert('Por favor ingresa un monto válido');
+        return;
+    }
+    
+    // Deshabilitar botón
+    const submitBtn = document.querySelector('#form-presupuesto-mensual button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando...';
+    
+    // Llamada AJAX
+    fetch('{% url "usuarios:crear_presupuesto_mensual" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            cerrarModalPresupuestoMensual();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar el presupuesto. Por favor intenta de nuevo.');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+});
+
+// Función para obtener cookie CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

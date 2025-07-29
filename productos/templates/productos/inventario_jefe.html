@@ -1,0 +1,228 @@
+{% extends 'base_unified.html' %}
+
+{% block title %}Inventario General - RPGestor{% endblock %}
+{% block page_title %}Inventario General{% endblock %}
+{% block page_subtitle %}Gestión completa del inventario{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Menú específico para productos -->
+<a href="{% url 'productos:inventario_jefe' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md bg-white bg-opacity-20 text-white">
+    <i class="fas fa-boxes mr-3"></i>
+    Inventario General
+</a>
+
+<a href="{% url 'productos:import' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-upload mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Importar Productos
+</a>
+
+<a href="{% url 'usuarios:dashboard_redirect' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-tachometer-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Dashboard
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <!-- Header de la página -->
+    <div class="bg-gradient-to-r from-green-500 to-blue-600 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-boxes text-white text-2xl mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-semibold text-white">Control de Inventario</h2>
+                    <p class="text-green-100 text-sm">Gestión completa de productos y stock</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="bg-white bg-opacity-20 text-white px-3 py-1 rounded-full text-sm">
+                    <i class="fas fa-cube mr-1"></i>
+                    {{ productos|length }} productos
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Filtro Grupo -->
+            <div>
+                <label for="grupo" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-layer-group mr-1 text-gray-500"></i>
+                    Grupo
+                </label>
+                <select name="grupo" id="grupo" onchange="this.form.submit()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <option value="">— Todos los grupos —</option>
+                    {% for g in grupos %}
+                        <option value="{{ g.pk }}" {% if filtro.grupo == g.pk %}selected{% endif %}>
+                            {{ g.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filtro SubGrupo -->
+            <div>
+                <label for="subgrupo" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-tags mr-1 text-gray-500"></i>
+                    SubGrupo
+                </label>
+                <select name="subgrupo" id="subgrupo" onchange="this.form.submit()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <option value="">— Todos los subgrupos —</option>
+                    {% for sg in grupos|get_item:filtro.grupo|default:subgrupos_all %}
+                        <option value="{{ sg.pk }}" {% if filtro.subgrupo == sg.pk %}selected{% endif %}>
+                            {{ sg.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filtro Vendedor -->
+            <div>
+                <label for="vendedor" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-user-tie mr-1 text-gray-500"></i>
+                    Vendedor
+                </label>
+                <select name="vendedor" id="vendedor" onchange="this.form.submit()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <option value="">— Todos los vendedores —</option>
+                    {% for v in vendedores %}
+                        <option value="{{ v.pk }}" {% if filtro.vendedor == v.pk %}selected{% endif %}>
+                            {{ v.user.get_full_name|default:v.user.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-barcode mr-1"></i>
+                        Código
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-box mr-1"></i>
+                        Producto
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-layer-group mr-1"></i>
+                        Grupo
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-tags mr-1"></i>
+                        SubGrupo
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-cubes mr-1"></i>
+                        Stock
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <i class="fas fa-history mr-1"></i>
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for p in productos %}
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ p.codigo }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ p.nombre }}</div>
+                                <div class="text-sm text-gray-500">Código: {{ p.codigo }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ p.grupo.nombre }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            {{ p.subgrupo.nombre }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            {% if p.stock > 10 %}
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <span class="text-sm font-medium text-green-900">{{ p.stock }}</span>
+                            {% elif p.stock > 0 %}
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
+                                <span class="text-sm font-medium text-yellow-900">{{ p.stock }}</span>
+                            {% else %}
+                                <div class="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
+                                <span class="text-sm font-medium text-red-900">{{ p.stock }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="{% url 'productos:movimientos_stock' p.pk %}" 
+                           class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-lg transition-colors duration-200 inline-flex items-center">
+                            <i class="fas fa-history mr-1"></i>
+                            Ver Historial
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-search text-gray-400 text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay productos</h3>
+                            <p class="text-gray-500">No se encontraron productos con los filtros seleccionados.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer con estadísticas -->
+    {% if productos %}
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-sm text-gray-600">Stock alto (>10)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
+                    <span class="text-sm text-gray-600">Stock bajo (1-10)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
+                    <span class="text-sm text-gray-600">Sin stock (0)</span>
+                </div>
+            </div>
+            <div class="text-sm text-gray-600">
+                Total: {{ productos|length }} productos
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

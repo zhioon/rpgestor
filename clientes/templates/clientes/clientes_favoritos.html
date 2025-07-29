@@ -1,0 +1,300 @@
+{% extends 'base_unified.html' %}
+{% load currency_filters %}
+
+{% block title %}Clientes Favoritos - RPGestor{% endblock %}
+{% block page_title %}Clientes Favoritos{% endblock %}
+{% block page_subtitle %}Tus clientes favoritos para acceso rápido{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/vendedor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-yellow-500 to-orange-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-star text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Clientes Favoritos</h2>
+                        <p class="text-yellow-100 text-sm">{{ total_favoritos }} cliente{{ total_favoritos|pluralize }} favorito{{ total_favoritos|pluralize }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'clientes:lista_clientes' %}" 
+                       class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
+                        <i class="fas fa-list mr-2"></i>
+                        Todos los Clientes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        {% if total_favoritos > 0 %}
+        <div class="p-6 border-b border-gray-200">
+            <form method="get" class="flex items-center space-x-4">
+                <div class="flex-1 relative">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search_query }}"
+                           placeholder="Buscar en tus favoritos..."
+                           class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" 
+                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-search mr-2"></i>
+                    Buscar
+                </button>
+                {% if search_query %}
+                <a href="{% url 'clientes:clientes_favoritos' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Limpiar
+                </a>
+                {% endif %}
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lista de favoritos -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        {% if page_obj and page_obj.object_list %}
+            <!-- Grid de clientes favoritos -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for cliente in page_obj %}
+                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200">
+                        <!-- Header de la tarjeta -->
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-building text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-gray-900 leading-tight">
+                                        {{ cliente.data.Empresa|default:cliente.data.Razon_Comercial|default:"Sin nombre"|truncatechars:25 }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <button onclick="toggleFavorito({{ cliente.id }})" 
+                                    id="fav-btn-{{ cliente.id }}"
+                                    class="text-yellow-500 hover:text-yellow-600 transition-colors">
+                                <i id="fav-icon-{{ cliente.id }}" class="fas fa-star text-xl"></i>
+                            </button>
+                        </div>
+
+                        <!-- Información del cliente -->
+                        <div class="space-y-3 mb-4">
+                            {% if cliente.data.Razon_Comercial and cliente.data.Empresa != cliente.data.Razon_Comercial %}
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-tag mr-2 text-gray-400"></i>
+                                <span class="truncate">{{ cliente.data.Razon_Comercial }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-id-card mr-2 text-gray-400"></i>
+                                <span>{{ cliente.data.Nit|default:cliente.data.Codigo|default:"N/A" }}</span>
+                            </div>
+                            
+                            {% if cliente.data.Direccion %}
+                            <div class="flex items-start text-sm text-gray-600">
+                                <i class="fas fa-map-marker-alt mr-2 text-gray-400 mt-0.5"></i>
+                                <span class="truncate">{{ cliente.data.Direccion|truncatechars:40 }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if cliente.data.Telefono %}
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-phone mr-2 text-gray-400"></i>
+                                <span>{{ cliente.data.Telefono }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if cliente.data.Email %}
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                                <span class="truncate">{{ cliente.data.Email }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'clientes:detalle_cliente' cliente.id %}" 
+                               class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center">
+                                <i class="fas fa-eye mr-2"></i>
+                                Ver Detalle
+                            </a>
+                            <a href="{% url 'pedidos:crear_pedido' %}?cliente={{ cliente.id }}" 
+                               class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                Nuevo Pedido
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} favoritos
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-2 bg-yellow-500 text-white rounded-md">
+                            {{ page_obj.number }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Estado vacío -->
+            <div class="p-12 text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-star text-yellow-500 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-2">
+                        {% if search_query %}
+                            No se encontraron favoritos
+                        {% else %}
+                            No tienes clientes favoritos
+                        {% endif %}
+                    </h3>
+                    <p class="text-gray-500 mb-6 max-w-md">
+                        {% if search_query %}
+                            Intenta con otros términos de búsqueda en tus clientes favoritos.
+                        {% else %}
+                            Marca clientes como favoritos para acceder rápidamente a ellos desde aquí.
+                        {% endif %}
+                    </p>
+                    <div class="flex items-center space-x-4">
+                        {% if search_query %}
+                        <a href="{% url 'clientes:clientes_favoritos' %}" 
+                           class="inline-flex items-center px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                            <i class="fas fa-star mr-2"></i>
+                            Ver Todos los Favoritos
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'clientes:lista_clientes' %}" 
+                           class="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-users mr-2"></i>
+                            Ver Todos los Clientes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Función para toggle favoritos
+function toggleFavorito(clienteId) {
+    fetch(`/clientes/toggle-favorito/${clienteId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (!data.is_favorito) {
+                // Si se quitó de favoritos, remover la tarjeta con animación
+                const card = document.getElementById(`fav-btn-${clienteId}`).closest('.bg-gradient-to-br');
+                card.style.transform = 'scale(0.95)';
+                card.style.opacity = '0.5';
+                
+                setTimeout(() => {
+                    location.reload(); // Recargar para actualizar la lista
+                }, 300);
+            }
+            
+            showMessage(data.message, data.is_favorito ? 'success' : 'info');
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error al actualizar favorito', 'error');
+    });
+}
+
+// Función para mostrar mensajes temporales
+function showMessage(message, type) {
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500'
+    };
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+    messageDiv.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'} mr-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        messageDiv.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 300);
+    }, 3000);
+}
+
+// Agregar CSRF token
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfInput);
+    }
+});
+</script>
+{% endblock %}

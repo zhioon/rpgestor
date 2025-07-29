@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ mensaje.asunto }} - Mensaje{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mensaje-content {
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    .mensaje-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="mensaje-header text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <a href="{% url 'usuarios:inbox_mensajes' %}" 
+                       class="mr-4 p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-2xl font-bold">{{ mensaje.asunto }}</h1>
+                        <p class="text-white text-opacity-80 mt-1">
+                            De: {{ mensaje.jefe.get_full_name|default:mensaje.jefe.username }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Estado y acciones -->
+                <div class="flex items-center space-x-4">
+                    <!-- Tipo de mensaje -->
+                    <span class="px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20">
+                        {{ mensaje.get_tipo_display }}
+                    </span>
+                    
+                    <!-- Prioridad -->
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
+                        {% if mensaje.prioridad == 'U' %}bg-red-500
+                        {% elif mensaje.prioridad == 'A' %}bg-orange-500
+                        {% elif mensaje.prioridad == 'M' %}bg-blue-500
+                        {% elif mensaje.prioridad == 'B' %}bg-gray-500
+                        {% endif %}">
+                        {{ mensaje.get_prioridad_display }}
+                    </span>
+                    
+                    <!-- Estado de lectura -->
+                    {% if mensaje.leido %}
+                    <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-500">
+                        <i class="fas fa-eye mr-1"></i>Leído
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-500">
+                        <i class="fas fa-eye-slash mr-1"></i>No Leído
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Contenido principal del mensaje -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <!-- Información del mensaje -->
+                    <div class="border-b border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
+                                    {{ mensaje.jefe.get_full_name.0|default:mensaje.jefe.username.0|upper }}
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">
+                                        {{ mensaje.jefe.get_full_name|default:mensaje.jefe.username }}
+                                    </h3>
+                                    <p class="text-sm text-gray-600">Jefe de Ventas</p>
+                                </div>
+                            </div>
+                            
+                            <div class="text-right text-sm text-gray-500">
+                                <div>
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    {{ mensaje.created_at|date:"d/m/Y" }}
+                                </div>
+                                <div class="mt-1">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ mensaje.created_at|date:"H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Metadatos del mensaje -->
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="font-medium text-gray-700">Tipo:</span>
+                                <span class="ml-2 text-gray-600">{{ mensaje.get_tipo_display }}</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Prioridad:</span>
+                                <span class="ml-2 text-gray-600">{{ mensaje.get_prioridad_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenido del mensaje -->
+                    <div class="p-6">
+                        <div class="mensaje-content text-gray-800 text-base">
+                            {{ mensaje.mensaje }}
+                        </div>
+                    </div>
+                    
+                    <!-- Acciones -->
+                    <div class="border-t border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-3">
+                                {% if not mensaje.leido %}
+                                <button onclick="marcarLeido({{ mensaje.id }})" 
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-eye mr-2"></i>Marcar como Leído
+                                </button>
+                                {% else %}
+                                <button onclick="marcarNoLeido({{ mensaje.id }})" 
+                                        class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                                    <i class="fas fa-eye-slash mr-2"></i>Marcar como No Leído
+                                </button>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-sm text-gray-500">
+                                {% if mensaje.leido and mensaje.fecha_leido %}
+                                <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                Leído el {{ mensaje.fecha_leido|date:"d/m/Y H:i" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <!-- Información adicional -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                        Información
+                    </h3>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-medium text-gray-700">Enviado:</span>
+                            <span class="text-gray-600">{{ mensaje.created_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        
+                        {% if mensaje.leido %}
+                        <div class="flex justify-between">
+                            <span class="font-medium text-gray-700">Leído:</span>
+                            <span class="text-gray-600">{{ mensaje.fecha_leido|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex justify-between">
+                            <span class="font-medium text-gray-700">Tipo:</span>
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if mensaje.tipo == 'M' %}bg-blue-100 text-blue-800
+                                {% elif mensaje.tipo == 'A' %}bg-red-100 text-red-800
+                                {% elif mensaje.tipo == 'F' %}bg-green-100 text-green-800
+                                {% elif mensaje.tipo == 'R' %}bg-yellow-100 text-yellow-800
+                                {% elif mensaje.tipo == 'RE' %}bg-purple-100 text-purple-800
+                                {% endif %}">
+                                {{ mensaje.get_tipo_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="font-medium text-gray-700">Prioridad:</span>
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if mensaje.prioridad == 'U' %}bg-red-100 text-red-800
+                                {% elif mensaje.prioridad == 'A' %}bg-orange-100 text-orange-800
+                                {% elif mensaje.prioridad == 'M' %}bg-blue-100 text-blue-800
+                                {% elif mensaje.prioridad == 'B' %}bg-gray-100 text-gray-800
+                                {% endif %}">
+                                {{ mensaje.get_prioridad_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensajes relacionados -->
+                {% if mensajes_relacionados %}
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-comments mr-2 text-green-600"></i>
+                        Mensajes Relacionados
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        {% for msg_relacionado in mensajes_relacionados %}
+                        <a href="{% url 'usuarios:detalle_mensaje' msg_relacionado.id %}" 
+                           class="block p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                            <div class="flex items-start">
+                                {% if not msg_relacionado.leido %}
+                                <div class="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                {% else %}
+                                <div class="w-2 h-2 bg-gray-300 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                {% endif %}
+                                
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-medium text-gray-900 truncate">
+                                        {{ msg_relacionado.asunto }}
+                                    </h4>
+                                    <p class="text-xs text-gray-600 mt-1">
+                                        {{ msg_relacionado.created_at|date:"d/m/Y" }}
+                                    </p>
+                                    <span class="inline-block mt-1 px-2 py-1 text-xs rounded-full
+                                        {% if msg_relacionado.tipo == 'M' %}bg-blue-100 text-blue-800
+                                        {% elif msg_relacionado.tipo == 'A' %}bg-red-100 text-red-800
+                                        {% elif msg_relacionado.tipo == 'F' %}bg-green-100 text-green-800
+                                        {% elif msg_relacionado.tipo == 'R' %}bg-yellow-100 text-yellow-800
+                                        {% elif msg_relacionado.tipo == 'RE' %}bg-purple-100 text-purple-800
+                                        {% endif %}">
+                                        {{ msg_relacionado.get_tipo_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t">
+                        <a href="{% url 'usuarios:inbox_mensajes' %}?busqueda={{ mensaje.jefe.get_full_name|default:mensaje.jefe.username }}" 
+                           class="text-sm text-blue-600 hover:text-blue-800">
+                            Ver todos los mensajes de {{ mensaje.jefe.get_full_name|default:mensaje.jefe.username }}
+                            <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Acciones rápidas -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-600"></i>
+                        Acciones Rápidas
+                    </h3>
+                    
+                    <div class="space-y-2">
+                        <a href="{% url 'usuarios:inbox_mensajes' %}" 
+                           class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors block text-center">
+                            <i class="fas fa-inbox mr-2"></i>Volver al Inbox
+                        </a>
+                        
+                        <a href="{% url 'usuarios:inbox_mensajes' %}?estado=no_leidos" 
+                           class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors block text-center">
+                            <i class="fas fa-eye-slash mr-2"></i>Ver No Leídos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+function marcarLeido(mensajeId) {
+    fetch(`/usuarios/inbox/mensaje/${mensajeId}/marcar-leido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al marcar el mensaje como leído');
+    });
+}
+
+function marcarNoLeido(mensajeId) {
+    fetch(`/usuarios/inbox/mensaje/${mensajeId}/marcar-no-leido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al marcar el mensaje como no leído');
+    });
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

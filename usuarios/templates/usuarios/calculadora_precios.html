@@ -1,0 +1,420 @@
+{% extends 'base_unified.html' %}
+{% load static %}
+
+{% block title %}Calculadora de Precios - RPGestor{% endblock %}
+{% block page_title %}Calculadora de Precios{% endblock %}
+{% block page_subtitle %}Herramienta para calcular precios, descuentos e IVA{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/vendedor_menu.html' %}
+{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Calculadora Principal -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-500 to-blue-600 px-6 py-4">
+            <div class="flex items-center">
+                <i class="fas fa-calculator text-white text-2xl mr-3"></i>
+                <div>
+                    <h2 class="text-xl font-semibold text-white">Calculadora de Precios</h2>
+                    <p class="text-green-100 text-sm">Calcula precios, descuentos e IVA en tiempo real</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Panel de Entrada -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                        <i class="fas fa-edit text-blue-500 mr-2"></i>
+                        Datos del Cálculo
+                    </h3>
+
+                    <!-- Selección de Producto -->
+                    <div>
+                        <label for="producto" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-box mr-1 text-gray-500"></i>
+                            Producto
+                        </label>
+                        <select id="producto" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Selecciona un producto --</option>
+                            {% for producto in productos %}
+                            <option value="{{ producto.id }}" 
+                                    data-codigo="{{ producto.codigo }}"
+                                    data-nombre="{{ producto.nombre }}"
+                                    data-precio1="{{ producto.precio1 }}"
+                                    data-precio2="{{ producto.precio2 }}"
+                                    data-precio3="{{ producto.precio3 }}"
+                                    data-iva="{{ producto.iva }}"
+                                    data-stock="{{ producto.stock }}">
+                                {{ producto.codigo }} - {{ producto.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Tipo de Precio -->
+                    <div>
+                        <label for="tipo-precio" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tags mr-1 text-gray-500"></i>
+                            Tipo de Precio
+                        </label>
+                        <select id="tipo-precio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="precio1">Precio 1 (Mayorista)</option>
+                            <option value="precio2">Precio 2 (Minorista)</option>
+                            <option value="precio3">Precio 3 (Especial)</option>
+                        </select>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div>
+                        <label for="cantidad" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sort-numeric-up mr-1 text-gray-500"></i>
+                            Cantidad
+                        </label>
+                        <input type="number" id="cantidad" value="1" min="1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Descuento -->
+                    <div>
+                        <label for="descuento" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-percent mr-1 text-gray-500"></i>
+                            Descuento (%)
+                        </label>
+                        <input type="number" id="descuento" value="0" min="0" max="100" step="0.1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Incluir IVA -->
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="incluir-iva" checked
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                        <label for="incluir-iva" class="text-sm font-medium text-gray-700">
+                            <i class="fas fa-receipt mr-1 text-gray-500"></i>
+                            Incluir IVA en el cálculo
+                        </label>
+                    </div>
+
+                    <!-- Botón de Calcular -->
+                    <button id="btn-calcular" 
+                            class="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-center font-semibold">
+                        <i class="fas fa-calculator mr-2"></i>
+                        Calcular Precio
+                    </button>
+                </div>
+
+                <!-- Panel de Resultados -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i>
+                        Resultados del Cálculo
+                    </h3>
+
+                    <!-- Información del Producto -->
+                    <div id="info-producto" class="bg-gray-50 rounded-lg p-4 hidden">
+                        <h4 class="font-medium text-gray-900 mb-2">Producto Seleccionado</h4>
+                        <div class="space-y-1 text-sm text-gray-600">
+                            <div><strong>Código:</strong> <span id="producto-codigo">-</span></div>
+                            <div><strong>Nombre:</strong> <span id="producto-nombre">-</span></div>
+                            <div><strong>Stock:</strong> <span id="producto-stock">-</span> unidades</div>
+                        </div>
+                    </div>
+
+                    <!-- Desglose de Precios -->
+                    <div id="desglose-precios" class="space-y-4 hidden">
+                        <!-- Precio Base -->
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Precio Base (unitario)</span>
+                            <span id="precio-base" class="text-lg font-bold text-blue-600">$0</span>
+                        </div>
+
+                        <!-- Descuento -->
+                        <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Descuento</span>
+                            <span id="descuento-valor" class="text-lg font-bold text-yellow-600">-$0</span>
+                        </div>
+
+                        <!-- Precio con Descuento -->
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Precio c/Descuento</span>
+                            <span id="precio-descuento" class="text-lg font-bold text-green-600">$0</span>
+                        </div>
+
+                        <!-- Subtotal -->
+                        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">Subtotal (cantidad × precio)</span>
+                            <span id="subtotal" class="text-lg font-bold text-purple-600">$0</span>
+                        </div>
+
+                        <!-- IVA -->
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">IVA (<span id="iva-porcentaje">19</span>%)</span>
+                            <span id="iva-valor" class="text-lg font-bold text-orange-600">$0</span>
+                        </div>
+
+                        <!-- Total Final -->
+                        <div class="flex justify-between items-center p-4 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg text-white">
+                            <span class="text-lg font-bold">TOTAL FINAL</span>
+                            <span id="total-final" class="text-2xl font-bold">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- Acciones Rápidas -->
+                    <div id="acciones-rapidas" class="space-y-3 hidden">
+                        <h4 class="font-medium text-gray-900">Acciones Rápidas</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="btn-crear-pedido" 
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center">
+                                <i class="fas fa-plus mr-1"></i>
+                                Crear Pedido
+                            </button>
+                            <button id="btn-limpiar" 
+                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-center">
+                                <i class="fas fa-eraser mr-1"></i>
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculadoras Rápidas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Calculadora de Descuentos -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-percent text-yellow-500 mr-2"></i>
+                Calculadora de Descuentos
+            </h3>
+            <div class="space-y-3">
+                <input type="number" id="desc-precio" placeholder="Precio original" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="number" id="desc-porcentaje" placeholder="% Descuento" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div class="text-sm text-gray-600">Precio Final</div>
+                    <div id="desc-resultado" class="text-lg font-bold text-yellow-600">$0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculadora de IVA -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-receipt text-orange-500 mr-2"></i>
+                Calculadora de IVA
+            </h3>
+            <div class="space-y-3">
+                <input type="number" id="iva-base" placeholder="Valor base" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="number" id="iva-tasa" placeholder="% IVA" value="19"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <div class="text-center p-3 bg-orange-50 rounded-lg">
+                    <div class="text-sm text-gray-600">IVA a Pagar</div>
+                    <div id="iva-resultado" class="text-lg font-bold text-orange-600">$0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparador de Precios -->
+        <div class="bg-white shadow-lg rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-balance-scale text-purple-500 mr-2"></i>
+                Comparador de Precios
+            </h3>
+            <div class="space-y-3">
+                <input type="number" id="comp-precio1" placeholder="Precio 1" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="number" id="comp-precio2" placeholder="Precio 2" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <div class="text-center p-3 bg-purple-50 rounded-lg">
+                    <div class="text-sm text-gray-600">Diferencia</div>
+                    <div id="comp-resultado" class="text-lg font-bold text-purple-600">$0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = document.querySelector('meta[name=csrf-token]').content;
+    
+    // Referencias a elementos
+    const productoSelect = document.getElementById('producto');
+    const tipoPrecioSelect = document.getElementById('tipo-precio');
+    const cantidadInput = document.getElementById('cantidad');
+    const descuentoInput = document.getElementById('descuento');
+    const incluirIvaCheckbox = document.getElementById('incluir-iva');
+    const btnCalcular = document.getElementById('btn-calcular');
+    
+    // Elementos de resultado
+    const infoProducto = document.getElementById('info-producto');
+    const desglosePrecios = document.getElementById('desglose-precios');
+    const accionesRapidas = document.getElementById('acciones-rapidas');
+    
+    // Auto-calcular cuando cambien los valores
+    [productoSelect, tipoPrecioSelect, cantidadInput, descuentoInput, incluirIvaCheckbox].forEach(element => {
+        element.addEventListener('change', calcularPrecio);
+        if (element.type === 'number') {
+            element.addEventListener('input', debounce(calcularPrecio, 500));
+        }
+    });
+    
+    btnCalcular.addEventListener('click', calcularPrecio);
+    
+    async function calcularPrecio() {
+        const productoId = productoSelect.value;
+        if (!productoId) {
+            ocultarResultados();
+            return;
+        }
+        
+        const data = {
+            producto_id: productoId,
+            cantidad: parseInt(cantidadInput.value) || 1,
+            descuento: parseFloat(descuentoInput.value) || 0,
+            tipo_precio: tipoPrecioSelect.value,
+            incluir_iva: incluirIvaCheckbox.checked
+        };
+        
+        try {
+            btnCalcular.disabled = true;
+            btnCalcular.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Calculando...';
+            
+            const response = await fetch('/usuarios/calculadora-precios/calcular/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                mostrarResultados(result);
+            } else {
+                showNotification(result.error || 'Error en el cálculo', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error al calcular precio', 'error');
+        } finally {
+            btnCalcular.disabled = false;
+            btnCalcular.innerHTML = '<i class="fas fa-calculator mr-2"></i>Calcular Precio';
+        }
+    }
+    
+    function mostrarResultados(result) {
+        // Mostrar información del producto
+        document.getElementById('producto-codigo').textContent = result.producto.codigo;
+        document.getElementById('producto-nombre').textContent = result.producto.nombre;
+        document.getElementById('producto-stock').textContent = result.producto.stock;
+        infoProducto.classList.remove('hidden');
+        
+        // Mostrar desglose de precios
+        document.getElementById('precio-base').textContent = result.formateo.precio_base;
+        document.getElementById('descuento-valor').textContent = '-' + result.formateo.descuento_valor;
+        document.getElementById('precio-descuento').textContent = result.formateo.precio_con_descuento;
+        document.getElementById('subtotal').textContent = result.formateo.subtotal;
+        document.getElementById('iva-porcentaje').textContent = result.precios.iva_porcentaje;
+        document.getElementById('iva-valor').textContent = result.formateo.iva_valor;
+        document.getElementById('total-final').textContent = result.formateo.total;
+        desglosePrecios.classList.remove('hidden');
+        
+        // Mostrar acciones rápidas
+        accionesRapidas.classList.remove('hidden');
+    }
+    
+    function ocultarResultados() {
+        infoProducto.classList.add('hidden');
+        desglosePrecios.classList.add('hidden');
+        accionesRapidas.classList.add('hidden');
+    }
+    
+    // Calculadoras rápidas
+    setupCalculadoraRapida('desc', (precio, porcentaje) => precio - (precio * porcentaje / 100));
+    setupCalculadoraRapida('iva', (base, tasa) => base * tasa / 100);
+    setupCalculadoraComparador();
+    
+    function setupCalculadoraRapida(prefix, formula) {
+        const input1 = document.getElementById(`${prefix}-${prefix === 'desc' ? 'precio' : prefix === 'iva' ? 'base' : 'precio1'}`);
+        const input2 = document.getElementById(`${prefix}-${prefix === 'desc' ? 'porcentaje' : prefix === 'iva' ? 'tasa' : 'precio2'}`);
+        const resultado = document.getElementById(`${prefix}-resultado`);
+        
+        [input1, input2].forEach(input => {
+            input.addEventListener('input', () => {
+                const val1 = parseFloat(input1.value) || 0;
+                const val2 = parseFloat(input2.value) || 0;
+                const result = formula(val1, val2);
+                resultado.textContent = `$${result.toLocaleString()}`;
+            });
+        });
+    }
+    
+    function setupCalculadoraComparador() {
+        const precio1 = document.getElementById('comp-precio1');
+        const precio2 = document.getElementById('comp-precio2');
+        const resultado = document.getElementById('comp-resultado');
+        
+        [precio1, precio2].forEach(input => {
+            input.addEventListener('input', () => {
+                const p1 = parseFloat(precio1.value) || 0;
+                const p2 = parseFloat(precio2.value) || 0;
+                const diff = Math.abs(p1 - p2);
+                resultado.textContent = `$${diff.toLocaleString()}`;
+            });
+        });
+    }
+    
+    // Botones de acción
+    document.getElementById('btn-crear-pedido').addEventListener('click', () => {
+        const productoId = productoSelect.value;
+        if (productoId) {
+            window.location.href = `/pedidos/nuevo/?producto=${productoId}`;
+        }
+    });
+    
+    document.getElementById('btn-limpiar').addEventListener('click', () => {
+        productoSelect.value = '';
+        cantidadInput.value = '1';
+        descuentoInput.value = '0';
+        incluirIvaCheckbox.checked = true;
+        ocultarResultados();
+    });
+    
+    // Utilidades
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Implementar sistema de notificaciones
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
+});
+</script>
+{% endblock %}

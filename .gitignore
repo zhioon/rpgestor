@@ -1,0 +1,269 @@
+# RPGestor - Archivos a ignorar en Git
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Entorno virtual
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js (si usas npm para frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Archivos de configuración local
+local_settings.py
+settings_local.py
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de migración personalizados (mantener solo las migraciones base)
+# usuarios/migrations/0002_*.py
+# productos/migrations/0002_*.py
+# pedidos/migrations/0002_*.py
+# clientes/migrations/0002_*.py
+
+# Archivos de media subidos por usuarios (en producción usar S3 o similar)
+media/profile_pictures/
+media/productos/
+
+# Archivos estáticos compilados
+staticfiles/
+static_root/
+
+# Certificados SSL
+*.pem
+*.key
+*.crt
+
+# Backups
+backups/
+*.sql
+*.dump
+
+# Archivos de configuración de servidor
+nginx.conf
+apache.conf
+gunicorn.conf
+
+# Archivos de Docker (si no se usan)
+# Dockerfile
+# docker-compose.yml
+
+# Archivos de testing
+.tox/
+.coverage
+htmlcov/
+.pytest_cache/
+test-results/
+
+# Archivos de documentación generados
+docs/_build/
+site/
+
+# Archivos de configuración de herramientas
+.flake8
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Archivos de Jupyter Notebook
+.ipynb_checkpoints
+
+# Archivos de configuración de CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Archivos de configuración de Heroku
+.env.example
+Procfile.local
+
+# Archivos de configuración de AWS
+.aws/
+aws-config.json
+
+# Archivos de configuración de Google Cloud
+gcloud-config.json
+service-account.json
+
+# Archivos de configuración de Azure
+azure-config.json
+
+# Archivos de monitoreo
+newrelic.ini
+sentry.conf
+
+# Archivos de análisis de código
+.sonarqube/
+sonar-project.properties
+
+# Archivos de configuración de Redis
+redis.conf
+dump.rdb
+
+# Archivos de configuración de PostgreSQL
+postgresql.conf
+pg_hba.conf
+
+# Archivos de configuración de Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Archivos de configuración de Webpack (si se usa)
+webpack-stats.json
+webpack-bundle.json
+
+# Archivos de configuración de Tailwind CSS compilados
+tailwind.output.css
+
+# Archivos de configuración de ESLint y Prettier
+.eslintrc.js
+.prettierrc
+
+# Archivos de configuración de TypeScript
+tsconfig.json
+*.tsbuildinfo
+
+# Archivos de configuración de Sass
+.sass-cache/
+*.css.map
+
+# Archivos de configuración de Less
+*.less.cache
+
+# Archivos de configuración de Stylus
+*.styl.cache
+
+# Archivos de configuración de PostCSS
+postcss.config.local.js
+
+# Archivos de configuración de Babel
+.babelrc.local
+babel.config.local.js
+
+# Archivos de configuración de Rollup
+rollup.config.local.js
+
+# Archivos de configuración de Vite
+vite.config.local.js
+
+# Archivos de configuración de Parcel
+.parcel-cache/
+
+# Archivos de configuración de Snowpack
+.snowpack/
+
+# Archivos de configuración de SvelteKit
+.svelte-kit/
+
+# Archivos de configuración de Next.js
+.next/
+out/
+
+# Archivos de configuración de Nuxt.js
+.nuxt/
+dist/
+
+# Archivos de configuración de Gatsby
+.cache/
+public/
+
+# Archivos de configuración de Storybook
+storybook-static/
+
+# Archivos de configuración de Chromatic
+chromatic.config.json
+
+# Archivos de configuración de Playwright
+test-results/
+playwright-report/
+
+# Archivos de configuración de Cypress
+cypress/videos/
+cypress/screenshots/
+
+# Archivos de configuración de Jest
+coverage/
+jest.config.local.js
+
+# Archivos de configuración de Vitest
+vitest.config.local.js

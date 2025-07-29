@@ -1,0 +1,591 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Reportes del Equipo de Ventas - RPGestor{% endblock %}
+
+{% block page_title %}Reportes del Equipo de Ventas{% endblock %}
+{% block page_subtitle %}Análisis detallado y exportación de datos{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Menú específico para reportes -->
+<a href="{% url 'usuarios:dashboard_jefeventas_completo' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+    <i class="fas fa-arrow-left mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+    Volver al Dashboard
+</a>
+
+<a href="{% url 'usuarios:reportes_equipo' %}" 
+   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md bg-white bg-opacity-20 text-white">
+    <i class="fas fa-chart-bar mr-3 text-white"></i>
+    Reportes Generales
+</a>
+
+<div class="pt-2">
+    <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+        Filtros Rápidos
+    </p>
+    
+    <a href="{% url 'usuarios:reportes_equipo' %}?periodo=mes" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200 {% if periodo == 'mes' %}bg-white bg-opacity-10{% endif %}">
+        <i class="fas fa-calendar mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Este Mes
+    </a>
+    
+    <a href="{% url 'usuarios:reportes_equipo' %}?periodo=trimestre" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200 {% if periodo == 'trimestre' %}bg-white bg-opacity-10{% endif %}">
+        <i class="fas fa-calendar-alt mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Este Trimestre
+    </a>
+    
+    <a href="{% url 'usuarios:reportes_equipo' %}?periodo=año" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200 {% if periodo == 'año' %}bg-white bg-opacity-10{% endif %}">
+        <i class="fas fa-calendar-check mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Este Año
+    </a>
+</div>
+
+<div class="pt-2">
+    <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+        Acciones
+    </p>
+    
+    <a href="#" onclick="exportarReporte()" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-file-excel mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Exportar Excel
+    </a>
+    
+    <a href="#" onclick="imprimirReporte()" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-print mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Imprimir
+    </a>
+    
+    <a href="#" onclick="scrollToSection('filtros')" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200">
+        <i class="fas fa-filter mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        Filtros Avanzados
+    </a>
+</div>
+
+<div class="pt-2">
+    <p class="px-2 text-xs font-semibold text-white text-opacity-60 uppercase tracking-wider">
+        Vendedores
+    </p>
+    
+    {% for vendedor in todos_vendedores|slice:":5" %}
+    <a href="{% url 'usuarios:reportes_equipo' %}?vendedor_id={{ vendedor.id }}" 
+       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white text-opacity-80 hover:bg-white hover:bg-opacity-20 hover:text-white transition-all duration-200 {% if vendedor_seleccionado == vendedor.id|stringformat:'s' %}bg-white bg-opacity-10{% endif %}">
+        <i class="fas fa-user mr-3 text-white text-opacity-70 group-hover:text-white"></i>
+        {{ vendedor.user.first_name|truncatechars:15 }}
+    </a>
+    {% endfor %}
+    
+    {% if todos_vendedores|length > 5 %}
+    <p class="px-2 py-1 text-xs text-white text-opacity-50">
+        +{{ todos_vendedores|length|add:"-5" }} más...
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Estilos específicos para reportes */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .stats-card {
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.98);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .report-table {
+        transition: all 0.3s ease;
+    }
+    
+    .report-table:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Estilos para impresión */
+    @media print {
+        .no-print { display: none !important; }
+        body { font-size: 12px; }
+        table { font-size: 10px; }
+        .container { max-width: none; margin: 0; padding: 0; }
+        .sidebar { display: none !important; }
+        header { display: none !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center">
+            <a href="{% url 'usuarios:dashboard_jefeventas_completo' %}" class="text-blue-600 hover:text-blue-800 mr-4">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">Reportes del Equipo de Ventas</h1>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="exportarReporte()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+            </button>
+            <button onclick="imprimirReporte()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                <i class="fas fa-print mr-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Filtros de Reporte</h3>
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
+                <select name="periodo" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Este Mes</option>
+                    <option value="trimestre" {% if periodo == 'trimestre' %}selected{% endif %}>Este Trimestre</option>
+                    <option value="año" {% if periodo == 'año' %}selected{% endif %}>Este Año</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Vendedor</label>
+                <select name="vendedor_id" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">Todos los vendedores</option>
+                    {% for vendedor in todos_vendedores %}
+                    <option value="{{ vendedor.id }}" {% if vendedor_seleccionado == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                        {{ vendedor.user.first_name }} {{ vendedor.user.last_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-search mr-2"></i>Generar Reporte
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resumen General -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Ventas Totales</h3>
+                    <p class="text-2xl font-bold text-gray-900">${{ resumen.total_ventas|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Total Pedidos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ resumen.total_pedidos }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Promedio por Pedido</h3>
+                    <p class="text-2xl font-bold text-gray-900">${{ resumen.promedio_pedido|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 mr-4">
+                    <i class="fas fa-users text-orange-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Vendedores Activos</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ resumen.vendedores_activos }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desglose por Vendedor -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Desglose por Vendedor</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ventas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedidos</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Promedio</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meta</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cumplimiento</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participación</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for vendedor in vendedores_reporte %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ vendedor.vendedor__user__first_name }} {{ vendedor.vendedor__user__last_name }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                ${{ vendedor.total_ventas|floatformat:0|intcomma }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ vendedor.num_pedidos }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ vendedor.promedio_pedido|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ vendedor.vendedor__presupuesto|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% with cumplimiento=vendedor.total_ventas|floatformat:2 %}
+                            {% if vendedor.vendedor__presupuesto > 0 %}
+                            {% widthratio vendedor.total_ventas vendedor.vendedor__presupuesto 100 as porcentaje %}
+                            <div class="flex items-center">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="h-2 rounded-full 
+                                        {% if porcentaje >= 100 %}bg-green-500
+                                        {% elif porcentaje >= 80 %}bg-blue-500
+                                        {% elif porcentaje >= 60 %}bg-yellow-500
+                                        {% else %}bg-red-500{% endif %}"
+                                        style="width: {{ porcentaje }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium">{{ porcentaje }}%</span>
+                            </div>
+                            {% else %}
+                            <span class="text-sm text-gray-500">Sin meta</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if resumen.total_ventas > 0 %}
+                            {% widthratio vendedor.total_ventas resumen.total_ventas 100 %}%
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pedidos Detallados -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-semibold text-gray-900">Pedidos Detallados (Últimos 50)</h3>
+            <div class="text-sm text-gray-600">
+                Período: {{ fecha_inicio|date:"d/m/Y" }} - Hoy
+            </div>
+        </div>
+        
+        {% if pedidos %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">#{{ pedido.pk }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ pedido.fecha|date:"d/m/Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {{ pedido.cliente.data.Empresa|default:pedido.cliente.data.Razon_Comercial|default:"Sin nombre"|truncatechars:25 }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                NIT: {{ pedido.cliente.data.Nit|default:"N/A" }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {{ pedido.vendedor.user.first_name }} {{ pedido.vendedor.user.last_name }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                ${{ pedido.total|floatformat:0|intcomma }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if pedido.estado == 'F' %}bg-green-100 text-green-800
+                                {% elif pedido.estado == 'E' %}bg-blue-100 text-blue-800
+                                {% elif pedido.estado == 'B' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ pedido.get_estado_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">No hay pedidos para mostrar con los filtros seleccionados</p>
+        {% endif %}
+    </div>
+
+    <!-- Información del reporte -->
+    <div class="mt-8 text-center text-sm text-gray-500">
+        <p>Reporte generado el {{ "now"|date:"d/m/Y H:i" }}</p>
+        <p>Período: 
+            {% if periodo == 'mes' %}Este Mes
+            {% elif periodo == 'trimestre' %}Este Trimestre
+            {% elif periodo == 'año' %}Este Año
+            {% endif %}
+            (desde {{ fecha_inicio|date:"d/m/Y" }})
+        </p>
+        {% if vendedor_seleccionado %}
+        <p>Filtrado por vendedor específico</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function exportarReporte() {
+    // Crear tabla para exportar
+    const tabla = document.querySelector('table');
+    let csv = '';
+    
+    // Headers
+    const headers = tabla.querySelectorAll('thead th');
+    const headerRow = Array.from(headers).map(th => th.textContent.trim()).join(',');
+    csv += headerRow + '\n';
+    
+    // Datos
+    const filas = tabla.querySelectorAll('tbody tr');
+    filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        const filaData = Array.from(celdas).map(td => {
+            // Limpiar el texto de la celda
+            return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+        }).join(',');
+        csv += filaData + '\n';
+    });
+    
+    // Descargar archivo
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'reporte_equipo_ventas.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function imprimirReporte() {
+    window.print();
+}
+
+// Estilos para impresión
+const style = document.createElement('style');
+style.textContent = `
+    @media print {
+        .no-print { display: none !important; }
+        body { font-size: 12px; }
+        table { font-size: 10px; }
+        .container { max-width: none; margin: 0; padding: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Funciones del sidebar
+function scrollToSection(sectionId) {
+    const sections = {
+        'filtros': '.bg-white.rounded-lg.shadow-md.p-6.mb-8',
+        'resumen': '.grid.grid-cols-1.md\\:grid-cols-4',
+        'desglose': 'h3:contains("Desglose por Vendedor")',
+        'pedidos': 'h3:contains("Pedidos Detallados")'
+    };
+    
+    let element;
+    if (sectionId === 'filtros') {
+        element = document.querySelector('form[method="GET"]').closest('.bg-white');
+    } else if (sectionId === 'resumen') {
+        element = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-4');
+    } else {
+        // Buscar por texto del encabezado
+        const headings = document.querySelectorAll('h3');
+        for (let heading of headings) {
+            if (heading.textContent.includes(sectionId === 'desglose' ? 'Desglose' : 'Pedidos Detallados')) {
+                element = heading.closest('.bg-white');
+                break;
+            }
+        }
+    }
+    
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Resaltar brevemente
+        element.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.3)';
+        setTimeout(() => {
+            element.style.boxShadow = '';
+        }, 2000);
+    }
+}
+
+// Sistema de notificaciones integrado
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+    
+    const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        warning: 'bg-yellow-500 text-white',
+        info: 'bg-blue-500 text-white'
+    };
+    
+    notification.className += ` ${colors[type]}`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'}-circle mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+// Mejorar la función de exportar
+function exportarReporte() {
+    try {
+        const tabla = document.querySelector('table');
+        if (!tabla) {
+            showNotification('No se encontró tabla para exportar', 'warning');
+            return;
+        }
+        
+        let csv = '';
+        
+        // Headers
+        const headers = tabla.querySelectorAll('thead th');
+        const headerRow = Array.from(headers).map(th => th.textContent.trim()).join(',');
+        csv += headerRow + '\n';
+        
+        // Datos
+        const filas = tabla.querySelectorAll('tbody tr');
+        filas.forEach(fila => {
+            const celdas = fila.querySelectorAll('td');
+            const filaData = Array.from(celdas).map(td => {
+                // Limpiar el texto de la celda
+                return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+            }).join(',');
+            csv += filaData + '\n';
+        });
+        
+        // Descargar archivo
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        
+        // Nombre del archivo con fecha
+        const fecha = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `reporte_equipo_ventas_${fecha}.csv`);
+        
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showNotification('Reporte exportado correctamente', 'success');
+    } catch (error) {
+        showNotification('Error al exportar el reporte', 'error');
+        console.error('Error:', error);
+    }
+}
+
+// Mejorar la función de imprimir
+function imprimirReporte() {
+    // Agregar clase no-print a elementos antes de imprimir
+    const noPrintElements = document.querySelectorAll('button, .no-print, #sidebar, header');
+    noPrintElements.forEach(el => el.style.display = 'none');
+    
+    // Imprimir
+    window.print();
+    
+    // Restaurar elementos después de imprimir
+    setTimeout(() => {
+        noPrintElements.forEach(el => el.style.display = '');
+    }, 1000);
+    
+    showNotification('Preparando impresión...', 'info');
+}
+
+// Agregar clase no-print a elementos que no se deben imprimir
+document.addEventListener('DOMContentLoaded', function() {
+    const noPrintElements = document.querySelectorAll('button, .flex.justify-between');
+    noPrintElements.forEach(el => el.classList.add('no-print'));
+    
+    // Mejorar la experiencia de usuario
+    const form = document.querySelector('form[method="GET"]');
+    if (form) {
+        form.addEventListener('submit', function() {
+            showNotification('Generando reporte...', 'info');
+        });
+    }
+});
+</script>
+{% endblock %}

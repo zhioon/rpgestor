@@ -1,0 +1,529 @@
+{% extends 'base_unified.html' %}
+{% load humanize %}
+
+{% block title %}Presupuestos y Metas - RPGestor{% endblock %}
+
+{% block page_title %}Presupuestos y Metas{% endblock %}
+{% block page_subtitle %}Gestión de objetivos del equipo de ventas{% endblock %}
+{% block user_role %}Jefe de Ventas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Estadísticas Generales -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Presupuesto Total del Equipo -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 mr-4">
+                    <i class="fas fa-dollar-sign text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Presupuesto Total</h3>
+                    <p class="text-2xl font-bold text-gray-900">${{ presupuesto_total_equipo|floatformat:0|intcomma }}</p>
+                    <p class="text-sm text-blue-600">{{ porcentaje_equipo|floatformat:1 }}% cumplido</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores por Rendimiento -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 mr-4">
+                    <i class="fas fa-trophy text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Alto Rendimiento</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_excelentes }}</p>
+                    <p class="text-sm text-green-600">≥100% meta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendedores Regulares -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 mr-4">
+                    <i class="fas fa-chart-line text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">En Progreso</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ vendedores_buenos }}+{{ vendedores_regulares }}</p>
+                    <p class="text-sm text-yellow-600">50-99% meta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metas Activas -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 mr-4">
+                    <i class="fas fa-bullseye text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Metas Activas</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_metas_activas }}</p>
+                    <p class="text-sm text-purple-600">En seguimiento</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="text-xl font-semibold text-gray-900">Acciones Rápidas</h2>
+            
+            <div class="flex flex-wrap gap-3">
+                <button onclick="abrirModalPresupuestoMasivo()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-users mr-2"></i>Actualizar Presupuestos
+                </button>
+                
+                <button onclick="abrirModalMetaMasiva()" 
+                        class="bg-green-600 text-white px-4 py-2 rounded-md text-sm hover:bg-green-700 transition-colors">
+                    <i class="fas fa-bullseye mr-2"></i>Meta Grupal
+                </button>
+                
+                <button onclick="exportarReporte()" 
+                        class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exportar Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Vendedores con Presupuestos y Metas -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Gestión Individual</h2>
+            <p class="text-sm text-gray-600 mt-1">Presupuestos y metas por vendedor</p>
+        </div>
+
+        {% if vendedores_data %}
+        <div class="divide-y divide-gray-200">
+            {% for vendedor_data in vendedores_data %}
+            <div class="p-6">
+                <!-- Información del Vendedor -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-4">
+                        <!-- Avatar -->
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                <span class="text-white text-lg font-bold">
+                                    {{ vendedor_data.user.first_name.0|default:vendedor_data.user.username.0|upper }}{{ vendedor_data.user.last_name.0|upper }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Datos Básicos -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                {{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}
+                            </h3>
+                            <p class="text-sm text-gray-600">{{ vendedor_data.user.email }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Estado de Cumplimiento -->
+                    <div class="text-right">
+                        <div class="text-2xl font-bold 
+                            {% if vendedor_data.porcentaje_presupuesto >= 100 %}text-green-600
+                            {% elif vendedor_data.porcentaje_presupuesto >= 80 %}text-blue-600
+                            {% elif vendedor_data.porcentaje_presupuesto >= 50 %}text-yellow-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ vendedor_data.porcentaje_presupuesto|floatformat:1 }}%
+                        </div>
+                        <div class="text-sm text-gray-500">Cumplimiento</div>
+                    </div>
+                </div>
+
+                <!-- Presupuesto y Ventas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Presupuesto Mensual -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Presupuesto Mensual</h4>
+                            <button onclick="editarPresupuesto({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}', {{ vendedor_data.presupuesto_mensual }})" 
+                                    class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <div class="text-xl font-bold text-gray-900">${{ vendedor_data.presupuesto_mensual|floatformat:0|intcomma }}</div>
+                        <div class="text-sm text-gray-500">Meta base del mes</div>
+                    </div>
+
+                    <!-- Ventas Actuales -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Ventas del Mes</h4>
+                        <div class="text-xl font-bold text-green-600">${{ vendedor_data.ventas_mes|floatformat:0|intcomma }}</div>
+                        <div class="text-sm text-gray-500">Acumulado actual</div>
+                    </div>
+
+                    <!-- Diferencia -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Diferencia</h4>
+                        <div class="text-xl font-bold {% if vendedor_data.ventas_mes >= vendedor_data.presupuesto_mensual %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if vendedor_data.ventas_mes >= vendedor_data.presupuesto_mensual %}
+                                <span>+${{ vendedor_data.diferencia|floatformat:0|intcomma }}</span>
+                            {% else %}
+                                <span>-${{ vendedor_data.diferencia|floatformat:0|intcomma }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-sm text-gray-500">vs presupuesto</div>
+                    </div>
+                </div>
+
+                <!-- Metas Específicas -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-lg font-medium text-gray-900">Metas Específicas</h4>
+                        <button onclick="crearMeta({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}')" 
+                                class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Nueva Meta
+                        </button>
+                    </div>
+
+                    {% if vendedor_data.metas_activas %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for meta_data in vendedor_data.metas_activas %}
+                        <div class="border border-gray-200 rounded-lg p-4 {{ meta_data.bg }}">
+                            <div class="flex items-center justify-between mb-2">
+                                <h5 class="font-medium text-gray-900">{{ meta_data.meta.get_tipo_display }}</h5>
+                                <span class="text-xs {{ meta_data.color }} font-medium">
+                                    {{ meta_data.porcentaje|floatformat:1 }}%
+                                </span>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <div class="text-sm text-gray-600 mb-1">
+                                    ${{ meta_data.progreso|floatformat:0|intcomma }} / ${{ meta_data.meta.monto_meta|floatformat:0|intcomma }}
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if meta_data.porcentaje >= 100 %}bg-green-500{% elif meta_data.porcentaje >= 80 %}bg-blue-500{% elif meta_data.porcentaje >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" 
+                                         style="width: {{ meta_data.porcentaje|floatformat:0 }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span>{{ meta_data.meta.fecha_inicio }} - {{ meta_data.meta.fecha_fin }}</span>
+                                <span>
+                                    {% if meta_data.dias_restantes > 0 %}
+                                        {{ meta_data.dias_restantes }} días restantes
+                                    {% elif meta_data.dias_restantes == 0 %}
+                                        Vence hoy
+                                    {% else %}
+                                        Vencida
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            {% if meta_data.meta.descripcion %}
+                            <div class="mt-2 text-sm text-gray-600">
+                                {{ meta_data.meta.descripcion|truncatechars:50 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-bullseye text-4xl mb-2"></i>
+                        <p>No hay metas específicas asignadas</p>
+                        <button onclick="crearMeta({{ vendedor_data.vendedor.id }}, '{{ vendedor_data.user.get_full_name|default:vendedor_data.user.username }}')" 
+                                class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                            Crear primera meta
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Historial de Rendimiento -->
+                <div class="border-t border-gray-200 pt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Rendimiento Histórico</h4>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">${{ vendedor_data.ventas_mes|floatformat:0|intcomma }}</div>
+                            <div class="text-xs text-gray-500">Este mes</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">${{ vendedor_data.ventas_trimestre|floatformat:0|intcomma }}</div>
+                            <div class="text-xs text-gray-500">Este trimestre</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">${{ vendedor_data.ventas_año|floatformat:0|intcomma }}</div>
+                            <div class="text-xs text-gray-500">Este año</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay vendedores</h3>
+            <p class="text-gray-500">No se encontraron vendedores en el sistema.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para Editar Presupuesto -->
+<div id="modal-presupuesto" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Editar Presupuesto Mensual</h3>
+            <form id="form-presupuesto">
+                <input type="hidden" id="presupuesto-vendedor-id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vendedor:</label>
+                    <input type="text" id="presupuesto-vendedor-nombre" readonly 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Presupuesto Mensual:</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500">$</span>
+                        <input type="number" id="presupuesto-monto" required min="0" step="1000"
+                               class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Meta base de ventas para el mes actual</p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalPresupuesto()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Actualizar Presupuesto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Meta -->
+<div id="modal-meta" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Crear Nueva Meta</h3>
+            <form id="form-meta">
+                <input type="hidden" id="meta-vendedor-id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Para:</label>
+                    <input type="text" id="meta-vendedor-nombre" readonly 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Meta:</label>
+                    <select id="meta-tipo" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        {% for tipo_key, tipo_label in tipos_meta %}
+                        <option value="{{ tipo_key }}">{{ tipo_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto de la Meta:</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500">$</span>
+                        <input type="number" id="meta-monto" required min="0" step="1000"
+                               class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio:</label>
+                        <input type="date" id="meta-fecha-inicio" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Fin:</label>
+                        <input type="date" id="meta-fecha-fin" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción (opcional):</label>
+                    <textarea id="meta-descripcion" rows="3" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="Detalles adicionales sobre esta meta..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalMeta()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        Crear Meta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones para modales de presupuesto
+function editarPresupuesto(vendedorId, vendedorNombre, presupuestoActual) {
+    document.getElementById('presupuesto-vendedor-id').value = vendedorId;
+    document.getElementById('presupuesto-vendedor-nombre').value = vendedorNombre;
+    document.getElementById('presupuesto-monto').value = presupuestoActual;
+    document.getElementById('modal-presupuesto').classList.remove('hidden');
+}
+
+function cerrarModalPresupuesto() {
+    document.getElementById('modal-presupuesto').classList.add('hidden');
+    document.getElementById('form-presupuesto').reset();
+}
+
+// Funciones para modales de meta
+function crearMeta(vendedorId, vendedorNombre) {
+    document.getElementById('meta-vendedor-id').value = vendedorId;
+    document.getElementById('meta-vendedor-nombre').value = vendedorNombre;
+    
+    // Establecer fechas por defecto
+    const hoy = new Date();
+    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    
+    document.getElementById('meta-fecha-inicio').value = hoy.toISOString().split('T')[0];
+    document.getElementById('meta-fecha-fin').value = finMes.toISOString().split('T')[0];
+    
+    document.getElementById('modal-meta').classList.remove('hidden');
+}
+
+function cerrarModalMeta() {
+    document.getElementById('modal-meta').classList.add('hidden');
+    document.getElementById('form-meta').reset();
+}
+
+// Enviar formulario de presupuesto
+document.getElementById('form-presupuesto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const vendedorId = document.getElementById('presupuesto-vendedor-id').value;
+    const nuevoPresupuesto = document.getElementById('presupuesto-monto').value;
+    
+    // Validar que el presupuesto sea válido
+    if (!nuevoPresupuesto || parseFloat(nuevoPresupuesto) < 0) {
+        alert('Por favor ingresa un presupuesto válido');
+        return;
+    }
+    
+    // Deshabilitar el botón mientras se procesa
+    const submitBtn = document.querySelector('#form-presupuesto button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Actualizando...';
+    
+    // Llamada AJAX para actualizar el presupuesto
+    fetch('{% url "usuarios:actualizar_presupuesto_vendedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            vendedor_id: vendedorId,
+            nuevo_presupuesto: nuevoPresupuesto
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            cerrarModalPresupuesto();
+            location.reload(); // Recargar para ver los cambios
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el presupuesto. Por favor intenta de nuevo.');
+    })
+    .finally(() => {
+        // Rehabilitar el botón
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+});
+
+// Enviar formulario de meta
+document.getElementById('form-meta').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        vendedor_id: document.getElementById('meta-vendedor-id').value,
+        tipo: document.getElementById('meta-tipo').value,
+        monto_meta: document.getElementById('meta-monto').value,
+        fecha_inicio: document.getElementById('meta-fecha-inicio').value,
+        fecha_fin: document.getElementById('meta-fecha-fin').value,
+        descripcion: document.getElementById('meta-descripcion').value
+    };
+    
+    fetch('{% url "usuarios:asignar_meta_vendedor" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Meta creada correctamente');
+            cerrarModalMeta();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear la meta');
+    });
+});
+
+// Funciones placeholder para acciones masivas
+function abrirModalPresupuestoMasivo() {
+    alert('Funcionalidad de actualización masiva de presupuestos en desarrollo');
+}
+
+function abrirModalMetaMasiva() {
+    alert('Funcionalidad de meta grupal en desarrollo');
+}
+
+function exportarReporte() {
+    alert('Funcionalidad de exportación en desarrollo');
+}
+
+// Función para obtener cookie CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends 'base_unified.html' %}
+{% load currency_filters %}
+
+{% block title %}Lista de Clientes - RPGestor{% endblock %}
+{% block page_title %}Lista de Clientes{% endblock %}
+{% block page_subtitle %}Todos los clientes registrados en el sistema{% endblock %}
+{% block user_role %}{{ user.groups.first.name|default:"Usuario" }}{% endblock %}
+
+{% block sidebar_menu %}
+{% include 'menus/vendedor_menu.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Barra de búsqueda y estadísticas -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-users text-white text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Lista de Clientes</h2>
+                        <p class="text-blue-100 text-sm">{{ total_clientes }} cliente{{ total_clientes|pluralize }} registrado{{ total_clientes|pluralize }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'clientes:clientes_favoritos' %}" 
+                       class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center">
+                        <i class="fas fa-star mr-2"></i>
+                        Mis Favoritos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        <div class="p-6 border-b border-gray-200">
+            <form method="get" class="flex items-center space-x-4">
+                <div class="flex-1 relative">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search_query }}"
+                           placeholder="Buscar por empresa, NIT, código o dirección..."
+                           class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" 
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-search mr-2"></i>
+                    Buscar
+                </button>
+                {% if search_query %}
+                <a href="{% url 'clientes:lista_clientes' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Limpiar
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de clientes -->
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        {% if page_obj %}
+            <!-- Header de la tabla -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-building mr-1"></i>
+                                Cliente
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-id-card mr-1"></i>
+                                NIT / Código
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                Dirección
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-phone mr-1"></i>
+                                Contacto
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <i class="fas fa-cogs mr-1"></i>
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for cliente in page_obj %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
+                                        <i class="fas fa-building text-white"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ cliente.data.Empresa|default:cliente.data.Razon_Comercial|default:"Sin nombre" }}
+                                        </div>
+                                        {% if cliente.data.Razon_Comercial and cliente.data.Empresa != cliente.data.Razon_Comercial %}
+                                        <div class="text-sm text-gray-500">
+                                            {{ cliente.data.Razon_Comercial }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ cliente.data.Nit|default:cliente.data.Codigo|default:"N/A" }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 max-w-xs">
+                                    {{ cliente.data.Direccion|default:"No especificada"|truncatechars:50 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">
+                                    {% if cliente.data.Telefono %}
+                                        <div class="flex items-center mb-1">
+                                            <i class="fas fa-phone text-gray-400 mr-2"></i>
+                                            {{ cliente.data.Telefono }}
+                                        </div>
+                                    {% endif %}
+                                    {% if cliente.data.Email %}
+                                        <div class="flex items-center">
+                                            <i class="fas fa-envelope text-gray-400 mr-2"></i>
+                                            <span class="truncate max-w-xs">{{ cliente.data.Email }}</span>
+                                        </div>
+                                    {% endif %}
+                                    {% if not cliente.data.Telefono and not cliente.data.Email %}
+                                        <span class="text-gray-400 italic">Sin contacto</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <!-- Botón de favorito -->
+                                <button onclick="toggleFavorito({{ cliente.id }})" 
+                                        id="fav-btn-{{ cliente.id }}"
+                                        class="inline-flex items-center px-3 py-1 rounded-md transition-colors {% if cliente.id in favoritos_ids %}bg-yellow-100 text-yellow-700 hover:bg-yellow-200{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                                    <i id="fav-icon-{{ cliente.id }}" class="fas {% if cliente.id in favoritos_ids %}fa-star{% else %}fa-star-o{% endif %} mr-1"></i>
+                                    <span id="fav-text-{{ cliente.id }}">{% if cliente.id in favoritos_ids %}Favorito{% else %}Agregar{% endif %}</span>
+                                </button>
+                                
+                                <!-- Botón de detalle -->
+                                <a href="{% url 'clientes:detalle_cliente' cliente.id %}" 
+                                   class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Ver
+                                </a>
+                                
+                                <!-- Botón de crear pedido -->
+                                <a href="{% url 'pedidos:crear_pedido' %}?cliente={{ cliente.id }}" 
+                                   class="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    Pedido
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-users text-gray-400 text-4xl mb-4"></i>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">
+                                        {% if search_query %}
+                                            No se encontraron clientes
+                                        {% else %}
+                                            No hay clientes registrados
+                                        {% endif %}
+                                    </h3>
+                                    <p class="text-gray-500 mb-4">
+                                        {% if search_query %}
+                                            Intenta con otros términos de búsqueda
+                                        {% else %}
+                                            Los clientes aparecerán aquí cuando se registren
+                                        {% endif %}
+                                    </p>
+                                    {% if search_query %}
+                                    <a href="{% url 'clientes:lista_clientes' %}" 
+                                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-list mr-2"></i>
+                                        Ver Todos los Clientes
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} clientes
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-2 bg-blue-500 text-white rounded-md">
+                            {{ page_obj.number }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                               class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Función para toggle favoritos
+function toggleFavorito(clienteId) {
+    fetch(`/clientes/toggle-favorito/${clienteId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const btn = document.getElementById(`fav-btn-${clienteId}`);
+            const icon = document.getElementById(`fav-icon-${clienteId}`);
+            const text = document.getElementById(`fav-text-${clienteId}`);
+            
+            if (data.is_favorito) {
+                btn.className = 'inline-flex items-center px-3 py-1 rounded-md transition-colors bg-yellow-100 text-yellow-700 hover:bg-yellow-200';
+                icon.className = 'fas fa-star mr-1';
+                text.textContent = 'Favorito';
+            } else {
+                btn.className = 'inline-flex items-center px-3 py-1 rounded-md transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+                icon.className = 'fas fa-star-o mr-1';
+                text.textContent = 'Agregar';
+            }
+            
+            // Mostrar mensaje temporal
+            showMessage(data.message, data.is_favorito ? 'success' : 'info');
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error al actualizar favorito', 'error');
+    });
+}
+
+// Función para mostrar mensajes temporales
+function showMessage(message, type) {
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500'
+    };
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+    messageDiv.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'} mr-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        messageDiv.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 300);
+    }, 3000);
+}
+
+// Agregar CSRF token a todas las requests
+document.addEventListener('DOMContentLoaded', function() {
+    // Crear input hidden con CSRF token si no existe
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfInput);
+    }
+});
+</script>
+{% endblock %}
